@@ -76,9 +76,8 @@ bool LRFSensor::retrieve(std::vector<LRFPoint> &LRF_data)
 		float y = float(l * sin(radian)); */
 		float x = float(l * index2cos[i]);
 		float y = float(l * index2sin[i]);
-
-		// unit conversion. mm -> m and coordinate conversion x -> -y, y -> -x
-		LRFPoint tmp_pair(-y / 1000.0, -x / 1000.0);
+		// coordinate conversion x -> -y, y -> x
+		LRFPoint tmp_pair(-y / 1000.0, x / 1000.0);
 		LRF_data.push_back(tmp_pair);
 	}
 	return true;

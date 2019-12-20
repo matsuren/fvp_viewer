@@ -91,5 +91,5 @@ list( APPEND PROJ_LIBS ${Flycapture2_LIBRARY} )
 
 ######################################################################
 # Recurse into the subdirectories. 
-add_subdirectory( 3dmodelbev_test )
+add_subdirectory( viewer )
 

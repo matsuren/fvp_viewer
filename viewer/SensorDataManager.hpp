@@ -376,6 +376,7 @@ private:
 			delete[] writable;
 		}
 
+		record_foldername = setting_params.record_folder;
 		ths.push_back(std::thread(&SensorDataManager::LRFWorker, this, true));
 
 		return 0;

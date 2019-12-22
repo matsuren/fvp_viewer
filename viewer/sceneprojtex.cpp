@@ -34,7 +34,7 @@ void SceneProjTex::initScene()
 	const std::string robot_model_file = SensorDataManager::getInstance().setting_params.robot_model();
 	assimp_robot = new Mesh(robot_model_file, true);
 	assimp_robot->setProgram(&prog_robot);
-	GLModelManager::getInstance().setDrawableModel("genpatsu", assimp_robot);
+	GLModelManager::getInstance().setDrawableModel("robot", assimp_robot);
 
 	////////////////////////////////
 	// Load GL model
@@ -67,7 +67,7 @@ void SceneProjTex::initScene()
 	
 	cv::Mat cv_model_mat;
 	SensorDataManager::getInstance().setting_params.robot_align(cv_model_mat);
-	GLModelManager::getInstance().setModelMatrix("genpatsu", cv_model_mat);
+	GLModelManager::getInstance().setModelMatrix("robot", cv_model_mat);
 
 	prog.use();
 	// Load texture file to texture array
@@ -246,9 +246,9 @@ void SceneProjTex::render()
 
 	prog_robot.use();
 	// draw robot
-	ModelMatrix = GLModelManager::getInstance().getModelMatrix("genpatsu");
+	ModelMatrix = GLModelManager::getInstance().getModelMatrix("robot");
 	setMatricesPassthrough();
-	GLModelManager::getInstance().drawModel("genpatsu");
+	GLModelManager::getInstance().drawModel("robot");
 
 
 }
@@ -269,7 +269,7 @@ void SceneProjTex::setMatrices()
 //-----------------------------------------------------------------------------
 void SceneProjTex::setMatricesPassthrough()
 {
-	prog_robot.setUniform("PointSize", 6.0f);
+	prog_robot.setUniform("PointSize", 8.0f);
 	ViewMatrix = GLCameraManager::getInstance().getViewMat();
 	mat4 mv = ViewMatrix * ModelMatrix;
 	prog_robot.setUniform("ModelViewMatrix", mv);

@@ -3,10 +3,10 @@
         "calib_folder": "../../data",
         "record_folder": "../../raw_data",
         "image_sources": [
-            "13510272",
-            "13510273",
-            "14340493",
-            "14135931"
+            "15637060",
+            "15637085",
+            "16025862",
+            "16025863"
         ],
         "image_rois": [
             {
@@ -37,10 +37,10 @@
         "ocamcalib_files": "calib_results_*.txt",
         "sample_image_files": "img*.jpg",
         "camera_pose_yml": "final_camera_poses.yml",
-        "robot_model_file": "genpatsu_LRF.ply",
+        "robot_model_file": "robot.ply",
         "robot_align_yml": "robot_align_matrix.yml",
         "capture_framerate": 20,
-        "LRF_com_port": "COM4",
+        "LRF_com_port": "COM6",
         "lrf_align_yml": "lrf_align_matrix.yml",
         "sample_lrf_file": "urg_xy.csv"
     }

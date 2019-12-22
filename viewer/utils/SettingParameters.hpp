@@ -22,7 +22,7 @@ struct SettingParameters {
 	// ex. img*.jpg, calib_results_*.txt, final_camera_poses.yml
 	std::string calib_folder = "../../data";
 	std::string record_folder = "../../raw_data";
-	std::vector<std::string> image_sources = { "13510272" ,"13510273", "14340493" ,"14135931" };
+	std::vector<std::string> image_sources = { "15637060", "15637085","16025862","16025863" };
 	std::vector<CerealROI> image_rois = {};
 
 	int capture_framerate = 20;
@@ -32,7 +32,7 @@ private:
 	std::string ocamcalib_files = "calib_results_*.txt";
 	std::string sample_image_files = "img*.jpg";
 	std::string camera_pose_yml = "final_camera_poses.yml";
-	std::string robot_model_file = "genpatsu_LRF.ply";
+	std::string robot_model_file = "robot.ply";
 	std::string robot_align_yml = "robot_align_matrix.yml";
 	std::string lrf_align_yml = "lrf_align_matrix.yml";
 	std::string sample_lrf_file = "urg_xy.csv";

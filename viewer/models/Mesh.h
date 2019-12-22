@@ -36,29 +36,27 @@ public :
 		bool render_points_flag = false;
 		std::map<std::string, GLuint*> textureIdMap;
 		std::string basepath; // model folder
-		GLuint textureID; // glBindTexture(GL_TEXTURE_2D, textureID);
+		GLuint textureID = 0; // glBindTexture(GL_TEXTURE_2D, textureID);
 
 		unsigned int elementCount;
 
 		MeshEntry(aiMesh *mesh);
 		~MeshEntry();
 		void initMaterial(const aiMaterial *mtl_);
-		void setMaterial(GLSLProgram *prog);
+		void setMaterial(GLSLProgram *prog) const;
 		void setBasePath(const std::string &path);
-
-		void load(aiMesh *mesh);
-		void render(GLSLProgram *prog);
+		void render(GLSLProgram *prog) const;
 	};
 
-	std::vector<MeshEntry*> meshEntries;
+	std::vector<MeshEntry> meshEntries;
 
 	void createAILogger();
 	void destroyAILogger();
 
 public:
-	Mesh(const std::string &filename, bool use_pointcloud = false);
+	Mesh(const std::string &filename);
 	~Mesh(void);
-	GLSLProgram *tmp_prog = nullptr; // setUniform‚Ì‚Ý‚ÉŽg—p
+	GLSLProgram *tmp_prog = nullptr; // setUniform
 
 	void render() const;
 	void setProgram(GLSLProgram *prog);
@@ -66,7 +64,5 @@ public:
 
 private:
 	std::string getBasePath(const std::string& path);
-	void plyLoader(aiMesh *mesh, const std::string& filename);
-	std::vector<std::string> split(const std::string& s, const std::string delim);
 };
 

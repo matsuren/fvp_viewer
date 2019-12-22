@@ -32,7 +32,7 @@ void SceneProjTex::initScene()
 	glEnable(GL_DEPTH_TEST);
 
 	const std::string robot_model_file = SensorDataManager::getInstance().setting_params.robot_model();
-	assimp_robot = new Mesh(robot_model_file, true);
+	assimp_robot = new Mesh(robot_model_file);
 	assimp_robot->setProgram(&prog_robot);
 	GLModelManager::getInstance().setDrawableModel("robot", assimp_robot);
 

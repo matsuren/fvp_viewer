@@ -9,9 +9,8 @@
 #include <opencv2/calib3d.hpp>
 #include <cereal/archives/json.hpp>
 
-#include "cameras/PointGreyCamera.hpp"
-#include "cameras/PointGreyCameraRawImages.hpp"
-#include "cameras/GeneralCamera.hpp"
+#include "cameras/spinmanager.hpp"
+#include "cameras/spincamera.hpp"
 #include "cameras/RecordImageManager.hpp"
 #include "utils/FpsDisplayer.hpp"
 #include "utils/SettingParameters.hpp"
@@ -27,9 +26,11 @@ private:
 	SensorDataManager()
 	{
 		std::cout << "initialize SensorDataManager : " << std::endl;
+		manager = std::make_unique<SpinManager>();
 		initialize();
 	}
-	~SensorDataManager() = default;
+	~SensorDataManager() {
+	};
 public:
 	SensorDataManager(const SensorDataManager&) = delete;
 	SensorDataManager& operator=(const SensorDataManager&) = delete;
@@ -153,7 +154,7 @@ public:
 					}
 					glUnmapBuffer(GL_PIXEL_UNPACK_BUFFER); // release pointer to mapping buffer
 				}
-				glTexSubImage3D(GL_TEXTURE_2D_ARRAY, 0, capture_roi[i].x, capture_roi[i].y, GLint(i), processed_srcs[i].cols, processed_srcs[i].rows, 1, GL_BGR, GL_UNSIGNED_BYTE, nullptr);
+				glTexSubImage3D(GL_TEXTURE_2D_ARRAY, 0, 0, 0, GLint(i), processed_srcs[i].cols, processed_srcs[i].rows, 1, GL_BGR, GL_UNSIGNED_BYTE, nullptr);
 				processed_srcs_is_new[i] = false;
 			}
 		}
@@ -207,13 +208,13 @@ public:
 	SettingParameters setting_params;
 
 private:
+	std::unique_ptr<SpinManager> manager;
 	// camera image
 	std::vector<cv::Mat> capture_imgs;
-	std::vector<cv::Rect> capture_roi;
 	std::vector<GLuint> img_pixel_buffers;
 	std::vector<cv::Mat> fisheye_views;
 
-	std::vector<AbstractCamera*> cams;
+	std::vector<SpinCamPtr> cams;
 	std::vector<cv::Mat> raw_srcs;
 	std::vector<cv::Mat> processed_srcs;
 	std::vector<bool> processed_srcs_is_new;
@@ -268,25 +269,20 @@ private:
 		//////////////////////////
 		// load camera images
 		//////////////////////////
-		;
-		std::vector<std::string> image_fnames;
 		for (int i = 0; i < 4; i++)
 		{
-			image_fnames.push_back(setting_params.imagefile(i));
-		}
-		for (const auto &it : image_fnames)
-		{
-			cv::Mat tmp = cv::imread(it);
+			const std::string fname = setting_params.imagefile(i);
+			cv::Mat tmp = cv::imread(fname);
 			if (tmp.empty())
 			{
-				std::cout << "cannot load image : " << it << std::endl;
+				std::cout << "cannot load image : " << fname << std::endl;
 				return -1;
 			}
 			capture_imgs.push_back(tmp);
-			capture_roi.push_back(cv::Rect(0, 0, tmp.cols, tmp.rows));
 			img_pixel_buffers.push_back(0);
 			fisheye_views.push_back(cv::Mat::eye(4, 4, CV_32FC1));
 		}
+
 
 		//////////////////////////
 		// add camera
@@ -298,22 +294,10 @@ private:
 		//std::vector<std::string> image_sources = { raw_recorded_folder + "/0_*.pgm" ,raw_recorded_folder + "/1_*.pgm",
 		//	raw_recorded_folder + "/2_*.pgm" , raw_recorded_folder + "/3_*.pgm" };
 
-		// set roi
-		for (size_t i = 0; i < capture_roi.size(); i++)
-		{
-			capture_roi[i].x = setting_params.image_rois[i].x;
-			capture_roi[i].y = setting_params.image_rois[i].y;
-			capture_roi[i].width = setting_params.image_rois[i].width;
-			capture_roi[i].height = setting_params.image_rois[i].height;
-		}
 		// add camera
 		for (size_t i = 0; i < image_sources.size(); ++i) {
 			std::map<std::string, std::string> values;
-			values["FlyCapture2::framerate"] = std::to_string(setting_params.capture_framerate);
-			values["FlyCapture2::offsetX"] = std::to_string(capture_roi[i].x);
-			values["FlyCapture2::offsetY"] = std::to_string(capture_roi[i].y);
-			values["FlyCapture2::width"] = std::to_string(capture_roi[i].width);
-			values["FlyCapture2::height"] = std::to_string(capture_roi[i].height);
+			values["framerate"] = std::to_string(setting_params.capture_framerate);
 			addCamera(image_sources[i], values);
 		}
 
@@ -384,29 +368,31 @@ private:
 
 	//-----------------------------------------------------------------------------
 	void addCamera(const std::string &image_source, std::map<std::string, std::string> &values) {
-		AbstractCamera* cam;
-
-		// raw serial images
-		if (image_source.find("*") != std::string::npos)
-		{
-			cam = new PointGreyCameraRawImages(image_source, values);
+		SpinCamPtr cam;
+		// Spinnaker Camera (serial number)
+		if (image_source.size() == 8) {
+			if (manager->serial2idx.find(image_source) != manager->serial2idx.end())
+				cam = std::make_shared<SpinCam>(manager->getCamera(image_source));
 		}
-		// Point Grey Camera (serial number)
-		else if (image_source.size() == 8) {
-			cam = new PointGreyCamera(image_source, values);
-		}
-		// Point Grey Camera
+		// Spinnaker Camera
 		else {
 			int camera_num = std::stoi(image_source);
-			cam = new PointGreyCamera(camera_num, values);
+			if (camera_num <= manager->size())
+				cam = std::make_shared<SpinCam>(manager->getCamera(camera_num));
 		}
 		// set fps : Display freshrate
-		if (values.find("FlyCapture2::framerate") != values.end()) {
-			const std::string prop_name = "framerate";
-			std::map<std::string, std::string> prop_values = { { "value", values["FlyCapture2::framerate"] } };
-			cam->set_property(prop_name, prop_values);
+		if (values.find("framerate") != values.end()) {
+			double fps = std::stod(values["framerate"]);
+			if(cam)
+				cam->setFrameRate(fps);
 		}
 		cams.push_back(cam);
+
+		//// White balance
+		//cams.back()->setWhiteBalanceRatio(1.18, "Red");
+		//cams.back()->setWhiteBalanceRatio(1.46, "Blue");
+
+		// initialize container
 		raw_srcs.push_back(cv::Mat());
 		processed_srcs.push_back(capture_imgs[cams.size() - 1]);
 		processed_srcs_is_new.push_back(false);
@@ -417,9 +403,13 @@ public:
 	void startCapture(bool useImshow) {
 		size_t CAMERA_NUM = cams.size();
 		//
+		bool fps_flag = true;
 		for (size_t i = 0; i < CAMERA_NUM; ++i) {
-			// display fps only camera 0
-			ths.push_back(std::thread(&SensorDataManager::captureWorker, this, i, (i == 0) ? true : false));
+			// display fps only one
+			if (cams[i]) {
+				ths.push_back(std::thread(&SensorDataManager::captureWorker, this, i, fps_flag));
+				fps_flag = false;
+			}
 		}
 		if (useImshow)
 			ths.push_back(std::thread(&SensorDataManager::viewerWorker, this));
@@ -434,6 +424,7 @@ public:
 		if (enableFPS)
 			fps_displayer.start();
 
+		cv::Size img_size = processed_srcs[cam_id].size();
 		// malfunction image
 		cv::Mat malfunction_mat = cv::Mat::zeros(processed_srcs[cam_id].size(), CV_8UC3);
 		cv::line(malfunction_mat, cv::Point(0, 0), cv::Point(malfunction_mat.cols, malfunction_mat.rows), cv::Scalar(0, 0, 200), malfunction_mat.cols / 20);
@@ -446,12 +437,18 @@ public:
 		{
 			// loop
 			while (!checkExit()) {
-				if (cams[cam_id]->grabRaw())
+				if (cams[cam_id]->read(raw_srcs[cam_id], false))
 				{
-					cams[cam_id]->retrieve(raw_srcs[cam_id]);
 					{
 						std::lock_guard<std::mutex> lock(*mtxs[cam_id]);
 						cv::cvtColor(raw_srcs[cam_id], processed_srcs[cam_id], cv::COLOR_BayerGR2BGR);
+						if (img_size != processed_srcs[cam_id].size()) {
+							// use image
+							std::cout << "\nimage size in sample folder: " << img_size << " vs camera image: " << processed_srcs[cam_id].size() << "\n";
+							std::cout << "\n/*********** camera image size doesn't match !!! Use image in sample folder. ***********\n";
+							std::this_thread::sleep_for(std::chrono::milliseconds(33));
+							break;
+						}
 						processed_srcs_is_new[cam_id] = true;
 					}
 					// for capture

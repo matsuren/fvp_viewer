@@ -83,11 +83,23 @@ endif(USE_STATIC)
 find_package( OpenCV REQUIRED)
 # Please set "target_link_libraries( ${PROJ_NAME}  ${OpenCV_LIBS})"
 
-######################################################################
-# PointGrey Camera Flycapture2
-find_package(Flycapture2 REQUIRED)
-include_directories(${Flycapture2_INCLUDE_DIR})
-list( APPEND PROJ_LIBS ${Flycapture2_LIBRARY} )
+
+# ##############################################################################
+# Spinnaker SDK
+if(WIN32)
+  set(Spinnaker_LIBS debug "Spinnakerd_v140.lib" optimized "Spinnaker_v140.lib")
+  set(Spinnaker_INCLUDE_DIR
+      "C:/Program Files/Point Grey Research/Spinnaker/include")
+  link_directories(
+    "C:/Program Files/Point Grey Research/Spinnaker/lib64/vs2015")
+endif(WIN32)
+if(UNIX)
+  add_definitions(-DLINUX)
+  set(Spinnaker_LIBS "libSpinnaker.so")
+  set(Spinnaker_INCLUDE_DIR "/usr/include/spinnaker")
+  link_directories("/usr/lib")
+endif(UNIX)
+list( APPEND PROJ_LIBS ${Spinnaker_LIBS} )
 
 ######################################################################
 # Recurse into the subdirectories. 

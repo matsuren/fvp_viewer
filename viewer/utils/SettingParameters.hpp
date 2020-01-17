@@ -5,25 +5,13 @@
 #include <cereal/cereal.hpp>
 #include <cereal/types/vector.hpp>
 
-struct CerealROI {
-	int x;
-	int y;
-	int width;
-	int height;
 
-	template<class Archive>
-	void serialize(Archive & archive)
-	{
-		archive(CEREAL_NVP(x), CEREAL_NVP(y), CEREAL_NVP(width), CEREAL_NVP(height));
-	}
-};
 struct SettingParameters {
 	// data folder that contains calibrated data.
 	// ex. img*.jpg, calib_results_*.txt, final_camera_poses.yml
 	std::string calib_folder = "../../data";
 	std::string record_folder = "../../raw_data";
 	std::vector<std::string> image_sources = { "15637060", "15637085","16025862","16025863" };
-	std::vector<CerealROI> image_rois = {};
 
 	int capture_framerate = 20;
 	// LRF COM port
@@ -42,12 +30,6 @@ public:
 	// 
 	SettingParameters()
 	{
-		image_rois.clear();
-		for (int i = 0; i < 4; i++)
-		{
-			//image_rois.push_back({ 220, 220, 1600, 1600 });
-			image_rois.push_back({ 0, 0, 1600, 1600 });
-		}
 	}
 
 	std::string cam_poses() {
@@ -109,8 +91,7 @@ public:
 	template<class Archive>
 	void serialize(Archive & archive)
 	{
-		archive(CEREAL_NVP(calib_folder), CEREAL_NVP(record_folder),
-			CEREAL_NVP(image_sources), CEREAL_NVP(image_rois), 
+		archive(CEREAL_NVP(calib_folder), CEREAL_NVP(record_folder), CEREAL_NVP(image_sources),
 			CEREAL_NVP(ocamcalib_files), CEREAL_NVP(sample_image_files), CEREAL_NVP(camera_pose_yml),
 			CEREAL_NVP(robot_model_file), CEREAL_NVP(robot_align_yml),
 			CEREAL_NVP(capture_framerate), 

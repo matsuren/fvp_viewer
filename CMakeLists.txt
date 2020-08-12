@@ -89,9 +89,9 @@ find_package( OpenCV REQUIRED)
 if(WIN32)
   set(Spinnaker_LIBS debug "Spinnakerd_v140.lib" optimized "Spinnaker_v140.lib")
   set(Spinnaker_INCLUDE_DIR
-      "C:/Program Files/Point Grey Research/Spinnaker/include")
+      "C:/Program Files/FLIR Systems/Spinnaker/include")
   link_directories(
-    "C:/Program Files/Point Grey Research/Spinnaker/lib64/vs2015")
+    "C:/Program Files/FLIR Systems/Spinnaker/lib64/vs2015")
 endif(WIN32)
 if(UNIX)
   add_definitions(-DLINUX)

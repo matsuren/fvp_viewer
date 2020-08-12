@@ -320,6 +320,7 @@ Mesh::Mesh(const std::string &filename)
 	}
 
 	std::string basepath = getBasePath(std::string(filename));
+	meshEntries.reserve(scene->mNumMeshes);
 	for (size_t i = 0; i < scene->mNumMeshes; ++i) {
 		meshEntries.emplace_back(scene->mMeshes[i]);
 		meshEntries[i].setBasePath(basepath);

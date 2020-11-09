@@ -195,10 +195,10 @@ int main(int argc, char *argv[])
 	// Select OpenGL 4.3
 	glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 4);
 	glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
-	glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE);
+	glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, true);
 	glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
-	glfwWindowHint(GLFW_RESIZABLE, GL_TRUE);
-	glfwWindowHint(GLFW_OPENGL_DEBUG_CONTEXT, GL_TRUE);
+	glfwWindowHint(GLFW_RESIZABLE, true);
+	glfwWindowHint(GLFW_OPENGL_DEBUG_CONTEXT, true);
 	// uncomment to remove the title bar
 	// glfwWindowHint(GLFW_DECORATED, GL_FALSE);
 	// set an error callback
@@ -212,7 +212,7 @@ int main(int argc, char *argv[])
 		exit(EXIT_FAILURE);
 	}
 	glfwMakeContextCurrent(window);
-	// glfwSwapInterval(0) を指定するとディスプレイの垂直同期タイミングを待たなくなる
+	// glfwSwapInterval(0)  doesn't wait for refresh
 	glfwSwapInterval(1);
 	glfwSetKeyCallback(window, key_callback);
 	glfwSetScrollCallback(window, scroll_callback);
@@ -223,11 +223,7 @@ int main(int argc, char *argv[])
 
 
 	// Load the OpenGL functions.
-	if (ogl_LoadFunctions() == ogl_LOAD_FAILED) {
-		glfwTerminate();
-		exit(EXIT_FAILURE);
-	}
-
+	if (!gladLoadGL()) { exit(EXIT_FAILURE); }
 	GLUtils::dumpGLInfo();
 
 	// Initialization

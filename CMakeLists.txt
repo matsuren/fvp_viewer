@@ -63,7 +63,7 @@ ENDIF(NOT CMAKE_BUILD_TYPE)
 find_package( GLFW3 REQUIRED )
 find_package( OpenGL REQUIRED )
 list( APPEND PROJ_LIBS ${OPENGL_gl_LIBRARY} glfw)
-
+include_directories(${CMAKE_SOURCE_DIR}/viewer/glad/include)
 include_directories( ${PROJ_INCLUDE} )
 
 ######################################################################

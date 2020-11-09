@@ -15,7 +15,7 @@ class Mesh : public Drawable
 {
 public :
 	struct MeshEntry {
-		static enum BUFFERS {
+		enum BUFFERS {
 			VERTEX_BUFFER, TEXCOORD_BUFFER, NORMAL_BUFFER, INDEX_BUFFER, COLOR_BUFFER
 		};
 		GLuint vao;
@@ -38,7 +38,7 @@ public :
 		std::string basepath; // model folder
 		GLuint textureID = 0; // glBindTexture(GL_TEXTURE_2D, textureID);
 
-		unsigned int elementCount;
+		unsigned int elementCount = 0;
 
 		MeshEntry(aiMesh *mesh);
 		~MeshEntry();

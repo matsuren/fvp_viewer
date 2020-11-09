@@ -2,8 +2,6 @@
 #include <array>
 #include <opencv2/core.hpp>
 #include <glm/glm.hpp>
-
-#include "scene.h"
 #include "glslprogram.h"
 #include "vboplane.h"
 #include "Mesh.h"
@@ -12,7 +10,7 @@
 
 using glm::mat4;
 
-class SceneProjTex : public Scene
+class FVPSystem
 {
 private:
 	GLSLProgram prog;
@@ -37,11 +35,18 @@ private:
     void compileAndLinkShader();
 
 public:
-    SceneProjTex();
+    FVPSystem();
 
     void initScene();
     void update( float t );
     void render();
     void resize(int, int);
 	void getwinsize(int &w, int &h);
+
+
+	void animate(bool value) { m_animate = value; }
+	bool animating() { return m_animate; }
+
+protected:
+	bool m_animate;
 };

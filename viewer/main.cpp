@@ -3,8 +3,7 @@
 #include "main.hpp"
 
 #include "glutils.h"
-#include "scene.h"
-#include "sceneprojtex.h"
+#include "fvp_system.h"
 #include "SensorDataManager.hpp"
 #include "GLCameraManager.hpp"
 #include "RecordImageManager.hpp"
@@ -22,8 +21,8 @@
 #include <iomanip>
 using std::stringstream;
 
-Scene *scene;
-GLFWwindow *window;
+FVPSystem* fvp_system;
+GLFWwindow* window;
 string title;
 
 // ----- global extern in main.hpp--------
@@ -37,47 +36,42 @@ void threadExit() {
 }
 // render mode 1:floor 2:dome 3:LRF
 int RENDER_MODE = 3;
-char **g_argv;
+char** g_argv;
 int g_argc;
 
 //-----------------------------------------------------------------------------
 static void key_callback(GLFWwindow* window, int key, int scancode, int action, int mods)
 {
+	if (fvp_system == nullptr)
+		return;
 	if (key == GLFW_KEY_SPACE && action == GLFW_RELEASE)
-		if (scene)
-			scene->animate(!(scene->animating()));
+		fvp_system->animate(!(fvp_system->animating()));
 	if (key >= GLFW_KEY_1 && key <= GLFW_KEY_4 && action == GLFW_PRESS)
-		if (scene)
-			RENDER_MODE = key - GLFW_KEY_0;
+		RENDER_MODE = key - GLFW_KEY_0;
 	if (key == GLFW_KEY_RIGHT && action == GLFW_RELEASE)
-		if (scene)
-			GLCameraManager::getInstance().angle += 0.01f;
+		GLCameraManager::getInstance().angle += 0.01f;
 	if (key == GLFW_KEY_LEFT && action == GLFW_RELEASE)
-		if (scene)
-			GLCameraManager::getInstance().angle -= 0.01f;
+		GLCameraManager::getInstance().angle -= 0.01f;
 	if (key == GLFW_KEY_R && action == GLFW_RELEASE)
-		if (scene) {
-			if (RecordImageManager::getInstance().isRecorded()) {
-				RecordImageManager::getInstance().stopRecord();
-			}
-			else {
-				RecordImageManager::getInstance().startRecord();
-			}
+		if (RecordImageManager::getInstance().isRecorded()) {
+			RecordImageManager::getInstance().stopRecord();
 		}
-	if (key == GLFW_KEY_P && action == GLFW_RELEASE)
-		if (scene) {
-			char* buffer;
-			int width, height;
-			scene->getwinsize(width, height);
-			buffer = (char*)calloc(4, width * height);
-			glReadPixels(0, 0, width, height, GL_RGBA, GL_UNSIGNED_BYTE, buffer);
-			cv::Mat img(height, width, CV_8UC4, buffer);
-			cv::flip(img, img, 0);
-			cv::cvtColor(img, img, cv::COLOR_RGBA2BGR);
-			const std::string fname = "capture.jpg";
-			cv::imwrite(fname, img);
-			std::cout << "Capture screen: " << fname << std::endl;
+		else {
+			RecordImageManager::getInstance().startRecord();
 		}
+	if (key == GLFW_KEY_P && action == GLFW_RELEASE) {
+		char* buffer;
+		int width, height;
+		fvp_system->getwinsize(width, height);
+		buffer = (char*)calloc(4, width * height);
+		glReadPixels(0, 0, width, height, GL_RGBA, GL_UNSIGNED_BYTE, buffer);
+		cv::Mat img(height, width, CV_8UC4, buffer);
+		cv::flip(img, img, 0);
+		cv::cvtColor(img, img, cv::COLOR_RGBA2BGR);
+		const std::string fname = "capture.jpg";
+		cv::imwrite(fname, img);
+		std::cout << "Capture screen: " << fname << std::endl;
+	}
 }
 //-----------------------------------------------------------------------------
 static void scroll_callback(GLFWwindow* window, double x, double y)
@@ -107,12 +101,11 @@ static void cursor_position_callback(GLFWwindow* window, double x, double y)
 	GLCameraManager::getInstance().cursorPositionCallback(x, y);
 }
 //-----------------------------------------------------------------------------
-// ウィンドウのサイズ変更時の処理
 void resizeGL(int w, int h) {
-	scene->resize(w, h);
+	fvp_system->resize(w, h);
 }
 //-----------------------------------------------------------------------------
-static void resize_callback(GLFWwindow *window, int width, int height)
+static void resize_callback(GLFWwindow* window, int width, int height)
 {
 	resizeGL(width, height);
 }
@@ -125,7 +118,7 @@ void initializeGL() {
 	glDebugMessageInsert(GL_DEBUG_SOURCE_APPLICATION, GL_DEBUG_TYPE_MARKER, 0,
 		GL_DEBUG_SEVERITY_NOTIFICATION, -1, "Start debugging");
 #endif
-	scene->initScene();
+	fvp_system->initScene();
 }
 //-----------------------------------------------------------------------------
 void mainLoop() {
@@ -135,8 +128,8 @@ void mainLoop() {
 
 	while (!glfwWindowShouldClose(window) && !glfwGetKey(window, GLFW_KEY_ESCAPE)) {
 		GLUtils::checkForOpenGLError(__FILE__, __LINE__);
-		scene->update(float(glfwGetTime()));
-		scene->render();
+		fvp_system->update(float(glfwGetTime()));
+		fvp_system->render();
 		glfwSwapBuffers(window);
 		glfwPollEvents();
 
@@ -180,17 +173,17 @@ void error_callback(int error, const char* description)
 }
 //-----------------------------------------------------------------------------
 
-int main(int argc, char *argv[])
+int main(int argc, char* argv[])
 {
 	g_argc = argc;
 	g_argv = argv;
 
 	std::cout << "Free viewpoint image generation" << std::endl;
 
-	scene = new SceneProjTex();
-
+	fvp_system = new FVPSystem();
 	// Initialize GLFW
-	if (!glfwInit()) exit(EXIT_FAILURE);
+	if (!glfwInit())
+		return -1;
 
 	// Select OpenGL 4.3
 	glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 4);
@@ -209,7 +202,7 @@ int main(int argc, char *argv[])
 	window = glfwCreateWindow(WIN_WIDTH, WIN_HEIGHT, title.c_str(), NULL, NULL);
 	if (!window) {
 		glfwTerminate();
-		exit(EXIT_FAILURE);
+		return -1;
 	}
 	glfwMakeContextCurrent(window);
 	// glfwSwapInterval(0)  doesn't wait for refresh
@@ -223,7 +216,7 @@ int main(int argc, char *argv[])
 
 
 	// Load the OpenGL functions.
-	if (!gladLoadGL()) { exit(EXIT_FAILURE); }
+	if (!gladLoadGL()) { return -1; }
 	GLUtils::dumpGLInfo();
 
 	// Initialization
@@ -236,7 +229,7 @@ int main(int argc, char *argv[])
 	// Close window and terminate GLFW
 	glfwTerminate();
 	// Exit program
-	exit(EXIT_SUCCESS);
+	return 0;
 }
 
 

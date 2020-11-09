@@ -1,4 +1,4 @@
-#include "sceneprojtex.h"
+#include "fvp_system.h"
 #include "SensorDataManager.hpp"
 
 #include <cstdio>
@@ -22,9 +22,10 @@ using glm::vec3;
 #include "GLCameraManager.hpp"
 #include "GLModelManager.hpp"
 
-SceneProjTex::SceneProjTex() { }
+FVPSystem::FVPSystem() : m_animate(false) {
+}
 //-----------------------------------------------------------------------------
-void SceneProjTex::initScene()
+void FVPSystem::initScene()
 {
 	const int CAMERA_NUM = 4;
 	compileAndLinkShader();
@@ -207,14 +208,14 @@ void SceneProjTex::initScene()
 	SensorDataManager::getInstance().startCapture(false);
 }
 //-----------------------------------------------------------------------------
-void SceneProjTex::update(float t)
+void FVPSystem::update(float t)
 {
 	GLCameraManager::getInstance().update(t);
 	GLModelManager::getInstance().update(t);
 	SensorDataManager::getInstance().update(t);
 }
 //-----------------------------------------------------------------------------
-void SceneProjTex::render()
+void FVPSystem::render()
 {
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 	//glFrontFace(GL_CW);
@@ -253,7 +254,7 @@ void SceneProjTex::render()
 
 }
 //-----------------------------------------------------------------------------
-void SceneProjTex::setMatrices()
+void FVPSystem::setMatrices()
 {
 	mat4 mv = ViewMatrix * ModelMatrix;
 	prog.setUniform("ModelMatrix", ModelMatrix);
@@ -267,7 +268,7 @@ void SceneProjTex::setMatrices()
 	prog.setUniform("MVP", ProjMatrix * mv);
 }
 //-----------------------------------------------------------------------------
-void SceneProjTex::setMatricesPassthrough()
+void FVPSystem::setMatricesPassthrough()
 {
 	prog_robot.setUniform("PointSize", 8.0f);
 	ViewMatrix = GLCameraManager::getInstance().getViewMat();
@@ -282,7 +283,7 @@ void SceneProjTex::setMatricesPassthrough()
 	prog_robot.setUniform("Light.Position", ViewMatrix * worldLight);
 }
 //-----------------------------------------------------------------------------
-void SceneProjTex::resize(int w, int h)
+void FVPSystem::resize(int w, int h)
 {
 	glViewport(0, 0, w, h);
 	width = w;
@@ -290,13 +291,13 @@ void SceneProjTex::resize(int w, int h)
 	ProjMatrix = glm::perspective(glm::radians(47.0f), (float)w / h, 0.3f, 1000.0f);
 }
 //-----------------------------------------------------------------------------
-void SceneProjTex::getwinsize(int &w, int &h)
+void FVPSystem::getwinsize(int &w, int &h)
 {
 	w = width;
 	h = height;
 }
 //-----------------------------------------------------------------------------
-void SceneProjTex::compileAndLinkShader()
+void FVPSystem::compileAndLinkShader()
 {
 	try {
 		prog.compileShader("../../shader/projtex.vs");

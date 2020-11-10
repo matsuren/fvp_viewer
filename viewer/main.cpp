@@ -7,9 +7,11 @@
 #include "SensorDataManager.hpp"
 #include "GLCameraManager.hpp"
 #include "RecordImageManager.hpp"
+#include "SettingParameters.hpp"
 
 #include <cstdio>
 #include <cstdlib>
+#include <memory>
 
 //#define WIN_WIDTH 1200
 //#define WIN_HEIGHT 900
@@ -21,7 +23,7 @@
 #include <iomanip>
 using std::stringstream;
 
-FVPSystem* fvp_system;
+fvp::System* fvp_system;
 GLFWwindow* window;
 string title;
 
@@ -162,7 +164,6 @@ void mainLoop() {
 	}
 
 	threadExit();
-	SensorDataManager::getInstance().join();
 }
 //-----------------------------------------------------------------------------
 /** @brief It displays if an error is raised by the glfw
@@ -180,7 +181,10 @@ int main(int argc, char* argv[])
 
 	std::cout << "Free viewpoint image generation" << std::endl;
 
-	fvp_system = new FVPSystem();
+	auto cfg = std::make_shared<fvp::Config>("../../config_FVP_parameters.json");
+	fvp_system = new fvp::System(cfg);
+	auto manager = std::make_shared<fvp::GLDataManager>(cfg);
+	fvp_system->setSensorDataManager(manager);
 	// Initialize GLFW
 	if (!glfwInit())
 		return -1;

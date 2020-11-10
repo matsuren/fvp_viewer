@@ -6,7 +6,6 @@
 #define _USE_MATH_DEFINES
 #include <math.h>
 
-// divide_num : ‰½•ªŠ„‚·‚é‚© theta•ûŒü‚Í‚©‚¯‚é2
 GLModelDome::GLModelDome(float radius, int divide_num)
 {
 	std::vector<float> vertices;

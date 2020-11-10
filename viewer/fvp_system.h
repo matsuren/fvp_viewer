@@ -1,5 +1,6 @@
 #pragma once
 #include <array>
+#include <memory>
 #include <opencv2/core.hpp>
 #include <glm/glm.hpp>
 #include "glslprogram.h"
@@ -10,13 +11,23 @@
 
 using glm::mat4;
 
-class FVPSystem
+namespace fvp {
+	class Config;
+	class GLDataManager;
+
+class System
 {
 private:
+	const std::shared_ptr<Config> cfg;
+	std::shared_ptr<GLDataManager> gl_data_mng;
+	int win_width;
+	int win_height;
+	int img_width;
+	int img_height;
+
 	GLSLProgram prog;
 	GLSLProgram prog_robot;
 
-    int width, height;
 	VBOPlane *plane_floor;
     VBOPlane *plane_wall;
 	VBOPlane *plane_wall2;
@@ -35,8 +46,11 @@ private:
     void compileAndLinkShader();
 
 public:
-    FVPSystem();
+    System(const std::shared_ptr<Config> &config);
 
+	void setSensorDataManager(std::shared_ptr<GLDataManager> &manager) {
+		gl_data_mng = manager;
+	}
     void initScene();
     void update( float t );
     void render();
@@ -50,3 +64,4 @@ public:
 protected:
 	bool m_animate;
 };
+}

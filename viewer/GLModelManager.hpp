@@ -1,10 +1,12 @@
+#include <spdlog/spdlog.h>
+
 #include <glm/glm.hpp>
 #include <iostream>
 #include <map>
-using glm::mat4;
 #include <opencv2/core.hpp>
 
 #include "models/drawable.hpp"
+using glm::mat4;
 
 namespace fvp {
 class GLModelManager {
@@ -24,6 +26,7 @@ class GLModelManager {
   }
   void drawModel(const std::string key) { gl_models[key]->render(); }
   void setDrawableModel(const std::string key, model::Drawable *object) {
+    spdlog::info("setDrawableModel key:{}", key);
     gl_models[key] = object;
   }
 
@@ -37,6 +40,7 @@ class GLModelManager {
     setModelMatrix(key, glm::make_mat4(tmp_viewmat.ptr<float>(0, 0)));
   }
   void setModelMatrix(const std::string key, const mat4 &model_matrix) {
+    spdlog::info("setModelMatrix key:{}", key);
     model_matrices[key] = model_matrix;
   }
 

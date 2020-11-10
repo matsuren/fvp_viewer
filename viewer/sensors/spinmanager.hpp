@@ -1,7 +1,7 @@
 #pragma once
 #include <iostream>
 #include <string>
-
+#include <spdlog/spdlog.h>
 #include "Spinnaker.h"
 
 using namespace Spinnaker;
@@ -11,17 +11,14 @@ class SpinManager {
   SpinManager() {
     system = System::GetInstance();
     const LibraryVersion spinnakerLibraryVersion = system->GetLibraryVersion();
-    std::cout << "Spinnaker library version: " << spinnakerLibraryVersion.major
-              << "." << spinnakerLibraryVersion.minor << "."
-              << spinnakerLibraryVersion.type << "."
-              << spinnakerLibraryVersion.build << std::endl
-              << std::endl;
+    spdlog::info("Spinnaker library version: {}.{}.{}",
+                 spinnakerLibraryVersion.major, spinnakerLibraryVersion.minor,
+                 spinnakerLibraryVersion.type);
 
     // Retrieve list of cameras from the system
     CameraList camList = system->GetCameras();
     const unsigned int numCameras = camList.GetSize();
-    std::cout << "Number of cameras detected: " << numCameras << std::endl
-              << std::endl;
+    spdlog::info("Number of cameras detected: {}", numCameras);
     for (size_t i = 0; i < numCameras; i++) {
       auto pCam = camList.GetByIndex(i);
       pCams.push_back(pCam);

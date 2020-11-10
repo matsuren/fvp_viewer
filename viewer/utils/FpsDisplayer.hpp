@@ -1,5 +1,5 @@
 #pragma once
-
+#include <spdlog/spdlog.h>
 #include <chrono>
 class FpsDisplayer {
   /**
@@ -34,8 +34,7 @@ class FpsDisplayer {
       double mill_sec =
           (static_cast<double>(t_meter_fps_count) / FPS_COUNT) / 1000.;
       double fps = 1000. / mill_sec;
-      std::cout << function_name << "\tfps : " << fps << "fps \t" << mill_sec
-                << " ms" << std::endl;
+      spdlog::info("{}\t{:.2f} fps\t{:.2f} ms.", function_name, fps, mill_sec);
       count_fps = 0;
       t_meter_fps_start = std::chrono::high_resolution_clock::now();
     }

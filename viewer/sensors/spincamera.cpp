@@ -1,6 +1,8 @@
 
 #include "spincamera.hpp"
 
+#include <spdlog/spdlog.h>
+
 #include <iostream>
 #include <opencv2/imgproc.hpp>
 #include <string>
@@ -29,11 +31,11 @@ SpinCam::SpinCam(CameraPtr pCam_) {
     // camera info
     serial = pCam->DeviceSerialNumber.ToString();
     model = pCam->DeviceModelName.ToString();
-    std::cout << "Pixel format:" << pCam->PixelFormat.ToString() << std::endl;
-    std::cout << "Device model:" << model << std::endl;
-    std::cout << "Serial number:" << serial << std::endl;
+    spdlog::info("Pixel format:{}", pCam->PixelFormat.ToString());
+    spdlog::info("Device model:{}", model);
+    spdlog::info("Serial number:{}", serial);
     if (model == "Grasshopper3 GS3-U3-41C6C") {
-      std::cout << "Set ROI since Model is " << model << std::endl;
+      spdlog::info("Set ROI since Model is {}", model);
       setROI(224, 224, 1600, 1600);
     }
 
@@ -105,17 +107,16 @@ bool SpinCam::retrieve(cv::Mat& img_, bool cvt_color) {
 }
 
 void SpinCam::setFrameRate(double fps) {
+  spdlog::debug("Setup framerate: {}", fps);
   pCam->TriggerMode.SetValue(TriggerMode_Off);
   pCam->TriggerSource.SetValue(TriggerSource_Line0);
   setFrameRateAuto(false);
-  std::cout << "Set framerate:" << fps << std::endl;
   pCam->AcquisitionFrameRate.SetValue(fps);
   isSoftwareTrigger = false;
 }
 
 void SpinCam::setROI(int offset_x, int offset_y, int width, int height) {
-  std::cout << "Set ROI:" << offset_x << ", " << offset_y << ", ";
-  std::cout << width << ", " << height << std::endl;
+  spdlog::debug("Set ROI:{},{},{},{}", offset_x, offset_y, width, height);
   if (pCam->OffsetX.GetValue() < offset_x) {
     int _width = width / 32;
     pCam->Width.SetValue(_width * 32);
@@ -140,7 +141,7 @@ void SpinCam::release() {
 }
 
 void SpinCam::setSoftwareTrigger() {
-  std::cout << "Set softwareTrigger" << std::endl;
+  spdlog::info("Set softwareTrigger");
   pCam->TriggerMode.SetValue(TriggerMode_Off);
   pCam->TriggerSource.SetValue(TriggerSource_Software);
   pCam->TriggerMode.SetValue(TriggerMode_On);
@@ -156,16 +157,15 @@ void SpinCam::setSoftwareTrigger() {
 }
 
 void SpinCam::displaySetting() {
-  std::cout << "#### Current setting ####" << std::endl;
-  std::cout << "Width x Height, (offsetX x offsetY):\n"
-            << pCam->Width.ToString() << " x " << pCam->Height.ToString()
-            << ", (" << pCam->OffsetX.ToString() << " x "
-            << pCam->OffsetY.ToString() << ")" << std::endl;
+  spdlog::info("#### Current setting ####");
+  spdlog::info("Width x Height, (offsetX x offsetY): {} x {}, ({} x {})",
+               pCam->Width.ToString(), pCam->Height.ToString(),
+               pCam->OffsetX.ToString(), pCam->OffsetY.ToString());
 
   if (isSoftwareTrigger) {
-    std::cout << "Software trigger" << std::endl;
+    spdlog::info("Software trigger");
   } else {
-    std::cout << "FPS:" << pCam->AcquisitionFrameRate.ToString() << std::endl;
+    spdlog::info("FPS: {}", pCam->AcquisitionFrameRate.ToString());
   }
 }
 

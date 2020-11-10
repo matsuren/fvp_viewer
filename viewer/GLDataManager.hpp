@@ -1,4 +1,6 @@
 #pragma once
+#include <spdlog/spdlog.h>
+
 #include <array>
 #include <fstream>
 #include <iostream>
@@ -50,10 +52,11 @@ class GLDataManager {
     //////////////////////////
     for (int i = 0; i < CAMERA_NUM; i++) {
       const std::string fname = cfg->image_filenames(i);
+      spdlog::info("Loading {}", fname);
       cv::Mat tmp = cv::imread(fname);
       if (tmp.empty()) {
-        std::cout << "cannot load image : " << fname << std::endl;
-        return -1;
+        spdlog::error("Cannot open image file:{}", fname);
+        throw std::runtime_error("No image file");
       }
       capture_imgs.push_back(tmp);
       img_pixel_buffers.push_back(0);
@@ -96,19 +99,20 @@ class GLDataManager {
       /* --------------------------------------------------------------------*/
       /* Read the parameters of the omnidirectional camera from the TXT file */
       /* --------------------------------------------------------------------*/
-      struct ocam_model
-          o;  // our ocam_models for the fisheye and catadioptric cameras
-              // get_ocam_model(&o, DATA_PATH"/data/calib_results_fisheye.txt");
+      struct ocam_model o;
+
       std::string ocam_fname = cfg->calib_filenames(i);
+      spdlog::info("Loading calib file: {}", ocam_fname);
       if (get_ocam_model(&o, ocam_fname.c_str()) == -1) {
-        exit(EXIT_FAILURE);
+        spdlog::error("Cannot load calib file:{}", ocam_fname);
+        throw std::runtime_error("No calib file");
       }
 
       /* --------------------------------------------------------------------*/
       /* Print ocam_model parameters                                         */
       /* --------------------------------------------------------------------*/
-      std::string ocamparam_name = "OCamParams[" + std::to_string(i) + "]";
-      std::cout << "OcamParam name : " << ocamparam_name << std::endl;
+      const std::string ocamparam_name =
+          "OCamParams[" + std::to_string(i) + "]";
       const int INVPOL_MAX = 14;
       const int POL_MAX = 6;
       while (o.length_invpol < INVPOL_MAX) {
@@ -120,18 +124,16 @@ class GLDataManager {
         o.length_pol++;
       }
 
-      printf("pol =\n");
+      spdlog::debug("pol =");
       for (int i = 0; i < o.length_pol; i++) {
-        printf("\t%e\n", o.pol[i]);
+        spdlog::debug("\t{:.4e}", o.pol[i]);
       };
-      printf("\n");
-      printf("invpol =\n");
+      spdlog::debug("invpol =");
       for (int i = 0; i < o.length_invpol; i++) {
-        printf("\t%e\n", o.invpol[i]);
+        spdlog::debug("\t{:.4e}", o.invpol[i]);
       };
-      printf("\n");
-      printf("\nxc = %f\nyc = %f\n\nwidth = %d\nheight = %d\n", o.xc, o.yc,
-             o.width, o.height);
+      spdlog::debug("xc={}, yc={}, width={}, height={}", o.xc, o.yc, o.width,
+                    o.height);
       prog.setUniform(ocamparam_name + ".xc", o.xc);
       prog.setUniform(ocamparam_name + ".yc", o.yc);
       prog.setUniform(ocamparam_name + ".c", o.c);
@@ -186,18 +188,6 @@ class GLDataManager {
 
   // -----------------------------------
   // get camera image
-  int getCameraImage(cv::Mat &ret_mat, const int camera_id) {
-    if (static_cast<size_t>(camera_id) < capture_imgs.size()) {
-      ret_mat = capture_imgs[camera_id];
-      return 0;
-    } else {
-      std::cout << "error! capture_imgs[" << camera_id << "] is nothing!"
-                << std::endl;
-      return -1;
-    }
-  }
-  // -----------------------------------
-  // get camera image
   int getCameraNumber() { return static_cast<int>(capture_imgs.size()); }
   // -----------------------------------
   // get camera image
@@ -206,9 +196,9 @@ class GLDataManager {
       img_pixel_buffers[camera_id] = pixel_buffer;
       return 0;
     } else {
-      std::cout << "error! img_pixel_buffers[" << camera_id << "] is nothing!"
-                << std::endl;
-      return -1;
+      spdlog::error("Arg (camera_id) exceeded number of capture_imgs.");
+      spdlog::error("camera_id:{} > {}", camera_id, capture_imgs.size());
+      throw std::invalid_argument("camera_id is larger than number of imgs");
     }
   }
   // -----------------------------------
@@ -217,9 +207,9 @@ class GLDataManager {
     if (static_cast<size_t>(camera_id) < capture_imgs.size()) {
       return img_pixel_buffers[camera_id];
     } else {
-      std::cout << "error! img_pixel_buffers[" << camera_id << "] is nothing!"
-                << std::endl;
-      return -1;
+      spdlog::error("Arg (camera_id) exceeded number of capture_imgs.");
+      spdlog::error("camera_id:{} > {}", camera_id, capture_imgs.size());
+      throw std::invalid_argument("camera_id is larger than number of imgs");
     }
   }
   // -----------------------------------
@@ -229,9 +219,9 @@ class GLDataManager {
       cv::transpose(fisheye_views[camera_id], ret_mat);
       return 0;
     } else {
-      std::cout << "error! capture_imgs[" << camera_id << "] is nothing!"
-                << std::endl;
-      return -1;
+      spdlog::error("Arg (camera_id) exceeded number of fisheye_views.");
+      spdlog::error("camera_id:{} > {}", camera_id, fisheye_views.size());
+      throw std::invalid_argument("camera_id is larger than number of imgs");
     }
   }
   // -----------------------------------
@@ -239,35 +229,31 @@ class GLDataManager {
     if (static_cast<size_t>(camera_id) < fisheye_views.size()) {
       Rt.convertTo(fisheye_views[camera_id], CV_32F);
     } else {
-      std::cout << "setCameraViewMatrix error!\n capture_imgs[" << camera_id
-                << "] is nothing!" << std::endl;
-      return -1;
+      spdlog::error("Arg (camera_id) exceeded number of fisheye_views.");
+      spdlog::error("camera_id:{} > {}", camera_id, fisheye_views.size());
+      throw std::invalid_argument("camera_id is larger than number of imgs");
     }
     return 0;
   }
   // -----------------------------------
 
   int updateImgs(const cv::Mat &img, const int camera_id) {
-	  if (!is_initialized)
-		  return 0;
-	  std::lock_guard<std::mutex> lock(*mtxs[camera_id]);
-	  capture_imgs[camera_id] = img.clone();
-	  imgs_update_required[camera_id] = true;
-	  return 0;
+    if (!is_initialized) return 0;
+    std::lock_guard<std::mutex> lock(*mtxs[camera_id]);
+    capture_imgs[camera_id] = img.clone();
+    imgs_update_required[camera_id] = true;
+    return 0;
   }
 
   int updateLRF(const std::vector<LRFPoint> &lrf_data) {
-	  if (!is_initialized)
-		  return 0;
-	  std::lock_guard<std::mutex> lock(LRF_mtx);
-	  LRF_data.clear();
-	  LRF_data.reserve(lrf_data.size());
-	  for (auto it : lrf_data)
-		  LRF_data.push_back(it);
-	  LRF_update_required = true;
-	  return 0;
+    if (!is_initialized) return 0;
+    std::lock_guard<std::mutex> lock(LRF_mtx);
+    LRF_data.clear();
+    LRF_data.reserve(lrf_data.size());
+    for (auto it : lrf_data) LRF_data.push_back(it);
+    LRF_update_required = true;
+    return 0;
   }
-
 
   // update
   void update(float t) {
@@ -276,11 +262,11 @@ class GLDataManager {
       if (imgs_update_required[i]) {
         if ((img_height != capture_imgs[i].rows) ||
             (img_width != capture_imgs[i].cols)) {
-          std::cout << "Different image size: input (" << capture_imgs[i].rows
-                    << ", " << capture_imgs[i].cols;
-          std::cout << ") Expected (" << img_height << ", " << img_width << ")"
-                    << std::endl;
-          exit(EXIT_FAILURE);
+          spdlog::error("Different image size");
+          spdlog::error("Input ({},{})", capture_imgs[i].rows,
+                        capture_imgs[i].cols);
+          spdlog::error("Expected ({},{})", img_height, img_width);
+          throw std::runtime_error("Wrong image size.");
         }
 
         glBindBuffer(GL_PIXEL_UNPACK_BUFFER, img_pixel_buffers[i]);

@@ -1,6 +1,7 @@
 #include "LRFSensor.hpp"
 
 #include <iostream>
+#include <spdlog/spdlog.h>
 
 #include "urg/Connection_information.hpp"
 #include "urg/Urg_driver.h"
@@ -14,8 +15,8 @@ LRFSensor::LRFSensor(int argc, char *argv[]) {
   if (!urg.open(information.device_or_ip_name(),
                 information.baudrate_or_port_number(),
                 information.connection_type())) {
-    std::cout << "Urg_driver::open(): " << information.device_or_ip_name()
-              << ": " << urg.what() << std::endl;
+    spdlog::warn("Urg_driver::open():{}:{}", information.device_or_ip_name(),
+                 urg.what());
     isOpened = false;
   } else {
     isOpened = true;
@@ -26,7 +27,7 @@ LRFSensor::LRFSensor(int argc, char *argv[]) {
 
     // get distance
     if (!urg.get_distance(data, &time_stamp)) {
-      std::cout << "Urg_driver::get_distance(): " << urg.what() << std::endl;
+      spdlog::warn("Urg_driver::get_distance(): {}", urg.what());
     }
     size_t data_n = data.size();
 
@@ -47,7 +48,7 @@ int LRFSensor::grab() {
 
   // get distance
   if (!urg.get_distance(data, &time_stamp)) {
-    std::cout << "Urg_driver::get_distance(): " << urg.what() << std::endl;
+    spdlog::warn("Urg_driver::get_distance(): {}", urg.what());
     return 0;
   }
   return 1;

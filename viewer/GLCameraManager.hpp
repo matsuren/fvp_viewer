@@ -4,6 +4,7 @@
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtx/transform.hpp>
 #include <iostream>
+#include <spdlog/spdlog.h>
 
 #define _USE_MATH_DEFINES
 #include <math.h>
@@ -23,7 +24,7 @@ class GLCameraManager {
         isAnimation(false),
         phi_min(0.0f),
         phi_max(M_PI / 2.0f - 0.00001f) {
-    std::cout << "initialize GLCameraManager : " << std::endl;
+    spdlog::info("initialize GLCameraManager : ");
   };
   ~GLCameraManager() = default;
 
@@ -92,12 +93,9 @@ class GLCameraManager {
   // mouse button
   void releasedLeftButton(double x, double y) {
     isDragged = false;
-    float degree = glm::degrees(angle);
-    std::cout << "angle : " << angle << ",  " << degree << " degree"
-              << std::endl;
-    degree = glm::degrees(phi);
-    std::cout << "phi : " << phi << ",  " << degree << " degree" << std::endl;
-    std::cout << "zoom : " << zoom << std::endl;
+    spdlog::debug("angle: {} [rad] ({} deg)", angle, glm::degrees(angle));
+    spdlog::debug("phi: {} [rad] ({} deg)", phi, glm::degrees(phi));
+    spdlog::debug("zoom: {}", zoom);
   }
   // cursor position
   void cursorPositionCallback(double x, double y) {

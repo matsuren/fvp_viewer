@@ -1,4 +1,6 @@
 #pragma once
+#include <spdlog/spdlog.h>
+
 #include <cereal/archives/json.hpp>
 #include <cereal/cereal.hpp>
 #include <cereal/types/vector.hpp>
@@ -61,21 +63,17 @@ class Config {
   Config(std::string cfg_fname) {
     // Load config file
     // If there is no config file, it will generate default config file
+    spdlog::info("Load config file: {}", cfg_fname);
     std::ifstream ifs(cfg_fname);
     if (!ifs) {
-      std::cout << "// ------------------------------------//\n";
-      std::cout << "Cannot read config file : " << cfg_fname << std::endl;
-      ;
-      std::cout << "Generating default config file..." << std::endl;
+      spdlog::error("Cannot read config file : {}", cfg_fname);
+      spdlog::info("Generating default config file in {}", cfg_fname);
       std::ofstream os(cfg_fname);
       {
         cereal::JSONOutputArchive o_archive(os);
         o_archive(cereal::make_nvp("FVP_settings", data));
       }
-      std::cout << "output : " << cfg_fname << std::endl;
-      std::cout << "// ------------------------------------//\n";
-
-      exit(-1);
+      throw std::runtime_error("No config file");
     }
     cereal::JSONInputArchive i_archive(ifs);
     i_archive(data);
@@ -113,14 +111,13 @@ class Config {
   std::vector<std::string> image_sources() { return data.image_sources; }
   int capture_framerate() { return data.capture_framerate; }
 
-
   void getRobotPose(cv::Mat &trans_matrix) {
     const auto fs = cv::FileStorage(
         data.calib_folder + "/" + data.robot_align_yml, cv::FileStorage::READ);
     if (!fs.isOpened()) {
-      std::cout << "cann't open file:" << data.robot_align_yml << " in "
-                << data.calib_folder << std::endl;
-      return;
+      spdlog::error("Cannot open file: {} in {}.", data.robot_align_yml,
+                    data.calib_folder);
+      throw std::runtime_error("No robot pose file");
     }
     cv::Mat R, rvec, tvec;
     double scale;
@@ -138,9 +135,9 @@ class Config {
     const auto fs = cv::FileStorage(
         data.calib_folder + "/" + data.lrf_align_yml, cv::FileStorage::READ);
     if (!fs.isOpened()) {
-      std::cout << "cann't open file:" << data.lrf_align_yml << " in "
-                << data.calib_folder << std::endl;
-      return;
+      spdlog::error("Cannot open file: {} in {}.", data.lrf_align_yml,
+                    data.calib_folder);
+      throw std::runtime_error("No LRF pose file");
     }
     cv::Mat tvec;
     fs["lrf_rot"] >> rot_rad;

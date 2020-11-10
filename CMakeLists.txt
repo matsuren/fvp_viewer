@@ -101,6 +101,12 @@ if(UNIX)
 endif(UNIX)
 list( APPEND PROJ_LIBS ${Spinnaker_LIBS} )
 
+
+# ##############################################################################
+# spdlog 
+find_package(spdlog REQUIRED)
+list( APPEND PROJ_LIBS spdlog::spdlog)
+
 ######################################################################
 # Recurse into the subdirectories. 
 add_subdirectory( viewer )

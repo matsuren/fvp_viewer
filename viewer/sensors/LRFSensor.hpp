@@ -4,6 +4,7 @@
 #include <fstream>
 #include <iostream>
 #include <vector>
+#include<spdlog/spdlog.h>
 
 struct LRFPoint {
   float x;
@@ -29,11 +30,11 @@ class LRFSensor {
 
   static int loadLRFDataCSV(const std::string lrf_fname,
                             std::vector<LRFPoint> &LRF_data) {
+    spdlog::info("Loading {}", lrf_fname); 
     std::ifstream ifs_lrf(lrf_fname);
     if (!ifs_lrf) {
-      std::cout << "error !\n cannot read LRF data file : " << lrf_fname
-                << std::endl;
-      return 1;
+      spdlog::error("Cannot load LRF data file:{}", lrf_fname);
+      throw std::runtime_error("No LRF data file");
     }
     // read from csv file
     LRF_data.clear();

@@ -140,7 +140,7 @@ void dumpGLInfo(bool dumpExtensions) {
     glGetIntegerv(GL_MAJOR_VERSION, &major);
     glGetIntegerv(GL_MINOR_VERSION, &minor);
 	
-	printf("-------------------------------------------------------------\n");
+		printf("-------------------------------------------------------------\n");
     printf("GL Vendor    : %s\n", vendor);
     printf("GL Renderer  : %s\n", renderer);
     printf("GL Version   : %s\n", version);

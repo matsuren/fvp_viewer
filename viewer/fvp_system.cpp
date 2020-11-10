@@ -34,6 +34,7 @@ void System::initScene() {
   glEnable(GL_DEPTH_TEST);
 
   const std::string robot_model_file = cfg->robot_model_filename();
+  spdlog::info("Loading: {}", robot_model_file); 
   assimp_robot = new model::Mesh(robot_model_file);
   assimp_robot->setProgram(&prog_robot);
   gl_model_mgr->setDrawableModel("robot", assimp_robot);
@@ -76,11 +77,6 @@ void System::initScene() {
   gl_data_mgr->initializeFisheye(prog);
   gl_data_mgr->initializeLRF();
 
-  prog.printActiveAttribs();
-  prog.printActiveUniformBlocks();
-  prog.printActiveUniforms();
-  std::cout << std::endl;
-
   // -------------------------------------------------
   // set Camera View Matrix  ---------
   {
@@ -106,10 +102,17 @@ void System::initScene() {
 
   // print camera poses
   for (int i = 0; i < CAMERA_NUM; i++) {
-    std::cout << "fisheye_views[" << std::to_string(i) << "]" << std::endl;
+    spdlog::debug("fisheye_views[{}]", i);
     for (int j = 0; j < 4; j++) {
-      std::cout << glm::to_string(fisheye_views[i][j]) << std::endl;
+      spdlog::debug(glm::to_string(fisheye_views[i][j]));
     }
+  }
+  
+  // Debug glsl
+  if (SPDLOG_LEVEL_DEBUG >= spdlog::get_level()) {
+    prog.printActiveAttribs();
+    prog.printActiveUniformBlocks();
+    prog.printActiveUniforms();
     std::cout << std::endl;
   }
 
@@ -187,11 +190,11 @@ void System::setMatricesPassthrough() {
 }
 //-----------------------------------------------------------------------------
 void System::resize(int w, int h) {
+  float fov = glm::radians(47.0f);
   glViewport(0, 0, w, h);
   win_width = w;
   win_height = h;
-  ProjMatrix =
-      glm::perspective(glm::radians(47.0f), (float)w / h, 0.3f, 1000.0f);
+  ProjMatrix = glm::perspective(fov, (float)w / h, 0.3f, 1000.0f);
 }
 //-----------------------------------------------------------------------------
 void System::getwinsize(int &w, int &h) {
@@ -200,12 +203,15 @@ void System::getwinsize(int &w, int &h) {
 }
 //-----------------------------------------------------------------------------
 void System::compileAndLinkShader() {
+  spdlog::info("Compile and link shader");
   try {
+    spdlog::info("../../shader/projtex.vs and projtex.fs");
     prog.compileShader("../../shader/projtex.vs");
     prog.compileShader("../../shader/projtex.fs");
     prog.link();
     prog.use();
 
+    spdlog::info("../../shader/simpleAssimpShader.vert and simpleAssimpShader.frag");
     prog_robot.compileShader("../../shader/simpleAssimpShader.vert");
     prog_robot.compileShader("../../shader/simpleAssimpShader.frag");
     prog_robot.link();

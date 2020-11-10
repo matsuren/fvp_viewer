@@ -12,7 +12,7 @@
 #include "fvp_system.hpp"
 #include "glutils.h"
 #include "sensors/sensor_manager.hpp"
-
+#include "spdlog/spdlog.h"
 
 //#define WIN_WIDTH 1200
 //#define WIN_HEIGHT 900
@@ -34,8 +34,6 @@ bool checkExit() { return exit_flag; }
 void threadExit() { exit_flag = true; }
 // render mode 1:floor 2:dome 3:LRF
 int RENDER_MODE = 3;
-char **g_argv;
-int g_argc;
 
 //-----------------------------------------------------------------------------
 static void key_callback(GLFWwindow *window, int key, int scancode, int action,
@@ -146,69 +144,91 @@ void error_callback(int error, const char *description) {
 //-----------------------------------------------------------------------------
 
 int main(int argc, char *argv[]) {
-  g_argc = argc;
-  g_argv = argv;
+  std::cout << "+++++++++++++++++++++++++++++++++++++++" << std::endl;
+  std::cout << "+++ Free viewpoint image generation +++" << std::endl;
+  std::cout << "+++++++++++++++++++++++++++++++++++++++" << std::endl;
 
-  std::cout << "Free viewpoint image generation" << std::endl;
+  // Set logger
+  // Runtime log levels
+  spdlog::set_level(spdlog::level::info); 
+  //spdlog::set_level(spdlog::level::trace);
 
-  auto cfg = std::make_shared<fvp::Config>("../../config_FVP_parameters.json");
-  fvp_system = new fvp::System(cfg);
-  auto manager = std::make_shared<fvp::GLDataManager>(cfg);
-  fvp_system->setSensorDataManager(manager);
+  std::unique_ptr<SensorManager> sensor_mgr;
+  try {
+    const std::string cfg_fname = "../../config_FVP_parameters.json";
+    auto cfg = std::make_shared<fvp::Config>(cfg_fname);
+    fvp_system = new fvp::System(cfg);
+    auto manager = std::make_shared<fvp::GLDataManager>(cfg);
+    fvp_system->setSensorDataManager(manager);
 
-  SensorManager sensor_mgr(cfg);
-  sensor_mgr.setSensorDataManager(manager);
+    sensor_mgr = std::make_unique<SensorManager>(cfg);
+    sensor_mgr->setSensorDataManager(manager);
 
-  // Initialize GLFW
-  if (!glfwInit()) return -1;
+    // Initialize GLFW
+    if (!glfwInit()) return -1;
 
-  // Select OpenGL 4.3
-  glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 4);
-  glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
-  glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, true);
-  glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
-  glfwWindowHint(GLFW_RESIZABLE, true);
-  glfwWindowHint(GLFW_OPENGL_DEBUG_CONTEXT, true);
-  // uncomment to remove the title bar
-  // glfwWindowHint(GLFW_DECORATED, GL_FALSE);
-  // set an error callback
-  glfwSetErrorCallback(error_callback);
+    // Select OpenGL 4.3
+    glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 4);
+    glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
+    glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, true);
+    glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
+    glfwWindowHint(GLFW_RESIZABLE, true);
+    glfwWindowHint(GLFW_OPENGL_DEBUG_CONTEXT, true);
+    // uncomment to remove the title bar
+    // glfwWindowHint(GLFW_DECORATED, GL_FALSE);
+    // set an error callback
+    glfwSetErrorCallback(error_callback);
 
-  // Open the window
-  title = "Free viewpoint image generation";
-  window = glfwCreateWindow(WIN_WIDTH, WIN_HEIGHT, title.c_str(), NULL, NULL);
-  if (!window) {
+    // Open the window
+    title = "Free viewpoint image generation";
+    window = glfwCreateWindow(WIN_WIDTH, WIN_HEIGHT, title.c_str(), NULL, NULL);
+    if (!window) {
+      glfwTerminate();
+      return -1;
+    }
+    glfwMakeContextCurrent(window);
+    // glfwSwapInterval(0)  doesn't wait for refresh
+    glfwSwapInterval(1);
+    glfwSetKeyCallback(window, key_callback);
+    glfwSetScrollCallback(window, scroll_callback);
+    glfwSetMouseButtonCallback(window, mouse_button_callback);
+    glfwSetCursorPosCallback(window, cursor_position_callback);
+    // set window size
+    glfwSetWindowSizeCallback(window, resize_callback);
+
+    // Load the OpenGL functions.
+    if (!gladLoadGL()) {
+      return -1;
+    }
+
+    if (SPDLOG_LEVEL_DEBUG >= spdlog::get_level()) {
+      GLUtils::dumpGLInfo();
+    }
+   
+    // Initialization
+    initializeGL();
+    resizeGL(WIN_WIDTH, WIN_HEIGHT);
+
+    // Enter the main loop
+    mainLoop();
+
+    // Take care of SensorManager
+    sensor_mgr->join();
+
+    // Close window and terminate GLFW
+    glfwTerminate();
+    
+  } catch (const std::exception &e) {
+    spdlog::error("Catch exception: {}", e.what());
+    // Finish thread
+    threadExit();
+    // Take care of SensorManager
+    sensor_mgr->join();
+    // Close window and terminate GLFW
     glfwTerminate();
     return -1;
   }
-  glfwMakeContextCurrent(window);
-  // glfwSwapInterval(0)  doesn't wait for refresh
-  glfwSwapInterval(1);
-  glfwSetKeyCallback(window, key_callback);
-  glfwSetScrollCallback(window, scroll_callback);
-  glfwSetMouseButtonCallback(window, mouse_button_callback);
-  glfwSetCursorPosCallback(window, cursor_position_callback);
-  // set window size
-  glfwSetWindowSizeCallback(window, resize_callback);
 
-  // Load the OpenGL functions.
-  if (!gladLoadGL()) {
-    return -1;
-  }
-  GLUtils::dumpGLInfo();
-
-  // Initialization
-  initializeGL();
-  resizeGL(WIN_WIDTH, WIN_HEIGHT);
-
-  // Enter the main loop
-  mainLoop();
-
-  // Take care of SensorManager
-  sensor_mgr.join();
-
-  // Close window and terminate GLFW
-  glfwTerminate();
   // Exit program
   return 0;
 }

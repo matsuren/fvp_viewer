@@ -27,6 +27,17 @@ cmake --build . --config Debug --target INSTALL
 cmake --build . --config Release --target INSTALL
 
 
+cd %DEV_DIR%
+git clone https://github.com/gabime/spdlog.git -b v1.8.1 --depth 1
+cd spdlog
+mkdir build
+cd build
+
+cmake -A x64 -G %GENERATOR_NAME% -DCMAKE_INSTALL_PREFIX=./install .. 
+cmake --build . --config Debug --target INSTALL
+cmake --build . --config Release --target INSTALL
+
+
 cd %CURRENT_DIR%
 mkdir build
 cd build

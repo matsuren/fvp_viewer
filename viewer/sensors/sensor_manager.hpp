@@ -15,16 +15,16 @@
 #include "sensors/spinmanager.hpp"
 #include "utils/FpsDisplayer.hpp"
 #include "utils/SettingParameters.hpp"
+#include <spdlog/spdlog.h>
 
 // singleton SensorManager CLASS
 class SensorManager {
  public:
   // private constractor
   SensorManager(const std::shared_ptr<fvp::Config> &config) : cfg(config) {
-    std::cout << "initialize SensorManager : " << std::endl;
+    spdlog::info("initialize SensorManager : ");
     manager = std::make_unique<SpinManager>();
     initialize();
-
     startCapture(false);
   }
   void setSensorDataManager(std::shared_ptr<fvp::GLDataManager> &manager) {
@@ -72,7 +72,6 @@ class SensorManager {
     writable[str.size()] = '\0';  // don't forget the terminating 0
     char *argv[] = {"exe", "-s", writable};
     LRF_sensor = std::make_unique<LRFSensor>(3, argv);
-    std::cout << "**** LRF port : " << argv[2] << std::endl;
     // don't forget to free the string after finished using it
     delete[] writable;
     return 0;
@@ -82,6 +81,8 @@ class SensorManager {
   void addCamera(const std::string &image_source,
                  std::map<std::string, std::string> &values) {
     SpinCamPtr cam;
+
+    spdlog::info("Adding Spinnaker camera:{}", image_source);
     // Spinnaker Camera (serial number)
     if (image_source.size() == 8) {
       if (manager->serial2idx.find(image_source) != manager->serial2idx.end())
@@ -96,8 +97,13 @@ class SensorManager {
     // set fps : Display freshrate
     if (values.find("framerate") != values.end()) {
       double fps = std::stod(values["framerate"]);
-       if(cam)
-      	cam->setFrameRate(fps);
+      if (cam) {
+        cam->setFrameRate(fps);
+      }
+    }
+
+    if (!cam) {
+     spdlog::warn("Cannot find camera:{}", image_source);
     }
     cams.push_back(cam);
     captured_imgs.push_back(cv::Mat());
@@ -146,20 +152,15 @@ class SensorManager {
             std::lock_guard<std::mutex> lock(*img_mtxs[cam_id]);
             cv::cvtColor(tmp, captured_imgs[cam_id], cv::COLOR_BayerGR2BGR);
           }
+
+          // Update image for fvp
           gl_data_mgr->updateImgs(captured_imgs[cam_id], cam_id);
-          bool ret = true;
-          if (!ret) {
-            // use image
-            std::cout << "\n/*********** Something wrong in captureWorker !!! "
-                         "Use image in sample folder. ***********\n";
-            std::this_thread::sleep_for(std::chrono::milliseconds(33));
-            break;
-          }
+
         } else {
           if (captured_imgs[cam_id].empty()) {
             // use image
-            std::cout << "\n/*********** camera " << cam_id
-                      << " is not working!  use image. ***********\n";
+            spdlog::warn("Camera {} is not working.", cam_id);
+            spdlog::warn("Use image instead.");
             std::this_thread::sleep_for(std::chrono::milliseconds(33));
             break;
           }
@@ -207,9 +208,8 @@ class SensorManager {
         LRF_sensor->retrieve(LRF_data);
         gl_data_mgr->updateLRF(LRF_data);
       } else {
-        // use image
-        std::cout << "\n/*********** LRF  is not working!  use saved data. "
-                     "***********\n";
+        spdlog::warn("LRF {} is not working.", cfg->LRF_com_port());
+        spdlog::warn("Use saved data instead.");
         std::this_thread::sleep_for(std::chrono::milliseconds(33));
         break;
       }

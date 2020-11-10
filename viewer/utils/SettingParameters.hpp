@@ -110,6 +110,10 @@ class Config {
 
   std::string record_folder() { return data.record_folder; }
   size_t num_camera() { return data.image_sources.size(); }
+  std::vector<std::string> image_sources() { return data.image_sources; }
+  int capture_framerate() { return data.capture_framerate; }
+
+
   void getRobotPose(cv::Mat &trans_matrix) {
     const auto fs = cv::FileStorage(
         data.calib_folder + "/" + data.robot_align_yml, cv::FileStorage::READ);

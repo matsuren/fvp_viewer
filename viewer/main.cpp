@@ -11,6 +11,8 @@
 #include "SettingParameters.hpp"
 #include "fvp_system.hpp"
 #include "glutils.h"
+#include "sensors/sensor_manager.hpp"
+
 
 //#define WIN_WIDTH 1200
 //#define WIN_HEIGHT 900
@@ -153,6 +155,10 @@ int main(int argc, char *argv[]) {
   fvp_system = new fvp::System(cfg);
   auto manager = std::make_shared<fvp::GLDataManager>(cfg);
   fvp_system->setSensorDataManager(manager);
+
+  SensorManager sensor_mgr(cfg);
+  sensor_mgr.setSensorDataManager(manager);
+
   // Initialize GLFW
   if (!glfwInit()) return -1;
 

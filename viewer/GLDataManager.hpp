@@ -1,4 +1,4 @@
-
+#pragma once
 #include <array>
 #include <fstream>
 #include <iostream>
@@ -246,6 +246,28 @@ class GLDataManager {
     return 0;
   }
   // -----------------------------------
+
+  int updateImgs(const cv::Mat &img, const int camera_id) {
+	  if (!is_initialized)
+		  return 0;
+	  std::lock_guard<std::mutex> lock(*mtxs[camera_id]);
+	  capture_imgs[camera_id] = img.clone();
+	  imgs_update_required[camera_id] = true;
+	  return 0;
+  }
+
+  int updateLRF(const std::vector<LRFPoint> &lrf_data) {
+	  if (!is_initialized)
+		  return 0;
+	  std::lock_guard<std::mutex> lock(LRF_mtx);
+	  LRF_data.clear();
+	  LRF_data.reserve(lrf_data.size());
+	  for (auto it : lrf_data)
+		  LRF_data.push_back(it);
+	  LRF_update_required = true;
+	  return 0;
+  }
+
 
   // update
   void update(float t) {

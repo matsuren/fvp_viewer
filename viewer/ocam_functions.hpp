@@ -4,7 +4,7 @@
    Copyright (C) 2008 DAVIDE SCARAMUZZA, ETH Zurich
    Author: Davide Scaramuzza - email: davide.scaramuzza@ieee.org
 ------------------------------------------------------------------------------*/
-
+#pragma once
 #include <float.h>
 #include <math.h>
 #include <stdio.h>

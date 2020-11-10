@@ -204,6 +204,9 @@ int main(int argc, char *argv[]) {
   // Enter the main loop
   mainLoop();
 
+  // Take care of SensorManager
+  sensor_mgr.join();
+
   // Close window and terminate GLFW
   glfwTerminate();
   // Exit program

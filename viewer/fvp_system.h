@@ -14,12 +14,14 @@ using glm::mat4;
 namespace fvp {
 	class Config;
 	class GLDataManager;
+	class GLModelManager;
 
 class System
 {
 private:
 	const std::shared_ptr<Config> cfg;
-	std::shared_ptr<GLDataManager> gl_data_mng;
+	std::shared_ptr<GLDataManager> gl_data_mgr;
+	std::unique_ptr<GLModelManager> gl_model_mgr;
 	int win_width;
 	int win_height;
 	int img_width;
@@ -49,7 +51,7 @@ public:
     System(const std::shared_ptr<Config> &config);
 
 	void setSensorDataManager(std::shared_ptr<GLDataManager> &manager) {
-		gl_data_mng = manager;
+		gl_data_mgr = manager;
 	}
     void initScene();
     void update( float t );

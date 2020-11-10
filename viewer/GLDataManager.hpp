@@ -14,76 +14,21 @@
 #include "LRFSensor.hpp"
 #include "main.hpp"
 #include "ocam_functions.h"
+
 namespace fvp {
 	class GLDataManager {
 	private:
 		const std::shared_ptr<Config> cfg;
 		int img_width, img_height;
-
+		GLuint texID;
 
 	public:
-		GLDataManager(const std::shared_ptr<Config> &config) : cfg(config)
+		bool is_initialized;
+
+		GLDataManager(const std::shared_ptr<Config> &config) : cfg(config), is_initialized(false)
 		{
 		}
 
-		int initialize() {
-			//////////////////////////
-			// load camera images
-			//////////////////////////
-			for (int i = 0; i < 4; i++)
-			{
-				const std::string fname = cfg->image_filenames(i);
-				cv::Mat tmp = cv::imread(fname);
-				if (tmp.empty())
-				{
-					std::cout << "cannot load image : " << fname << std::endl;
-					return -1;
-				}
-				capture_imgs.push_back(tmp);
-				img_pixel_buffers.push_back(0);
-				fisheye_views.push_back(cv::Mat::eye(4, 4, CV_32FC1));
-			}
-
-
-			//////////////////////////
-			// load LRF data
-			//////////////////////////
-			std::ifstream ifs_lrf(cfg->lrf_data_filename());
-			if (!ifs_lrf) {
-				std::cout << "error !\n cannot read LRF data file : " << cfg->lrf_data_filename() << std::endl;
-				return 1;
-			}
-			// read from csv file
-			LRF_data.clear();
-			std::string str;
-			while (getline(ifs_lrf, str)) {
-				std::vector<std::string> ret_str = split(str, ",");
-				LRFPoint tmp_pair(std::stof(ret_str[0]), std::stof(ret_str[1]));
-				LRF_data.push_back(tmp_pair);
-			}
-
-			std::vector<float> vertices;
-			std::vector<GLuint> elements;
-
-			getLRFGLdata(LRF_data, vertices, elements);
-
-			LRF_vertices_num = int(vertices.size());
-			glGenVertexArrays(1, &LRF_vaoHandle);
-			glBindVertexArray(LRF_vaoHandle);
-			glGenBuffers(2, LRF_handle);
-
-			glBindBuffer(GL_ARRAY_BUFFER, LRF_handle[0]);
-			glBufferData(GL_ARRAY_BUFFER, vertices.size() * sizeof(float), &vertices[0], GL_DYNAMIC_DRAW);
-			glVertexAttribPointer((GLuint)0, 3, GL_FLOAT, GL_FALSE, 0, ((GLubyte *)NULL + (0)));
-			glEnableVertexAttribArray(0);  // Vertex position
-
-			glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, LRF_handle[1]);
-			glBufferData(GL_ELEMENT_ARRAY_BUFFER, elements.size() * sizeof(GLuint), &elements[0], GL_DYNAMIC_DRAW);
-
-			glBindVertexArray(0);
-			LRF_data_is_new = false;
-			return 0;
-		}
 		// -----------------------------------
 		int initializeFisheye(GLSLProgram &prog)
 		{
@@ -92,7 +37,6 @@ namespace fvp {
 
 			// Load texture file to texture array
 			glActiveTexture(GL_TEXTURE0);
-			GLuint texID;
 			glGenTextures(1, &texID);
 			glBindTexture(GL_TEXTURE_2D_ARRAY, texID);
 			glTexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
@@ -115,6 +59,8 @@ namespace fvp {
 				capture_imgs.push_back(tmp);
 				img_pixel_buffers.push_back(0);
 				fisheye_views.push_back(cv::Mat::eye(4, 4, CV_32FC1));
+				imgs_update_required.push_back(false);
+				mtxs.push_back(new std::mutex());
 			}
 
 			// Load image in GPU
@@ -187,10 +133,12 @@ namespace fvp {
 				// set fov
 				//prog.setUniform(ocamparam_name + ".fov", M_PI);
 			}
+
+			is_initialized = true;
 			return 0;
 		}
 
-		int initializeLRF(GLSLProgram &prog)
+		int initializeLRF()
 		{
 	
 			//////////////////////////
@@ -229,7 +177,9 @@ namespace fvp {
 			glBufferData(GL_ELEMENT_ARRAY_BUFFER, elements.size() * sizeof(GLuint), &elements[0], GL_DYNAMIC_DRAW);
 
 			glBindVertexArray(0);
-			LRF_data_is_new = false;
+			LRF_update_required = false;
+
+			is_initialized = true;
 			return 0;
 		}
 
@@ -320,7 +270,13 @@ namespace fvp {
 		{
 			// texture
 			for (size_t i = 0; i < capture_imgs.size(); ++i) {
-				if (i < processed_srcs_is_new.size() && processed_srcs_is_new[i]) {
+				if (imgs_update_required[i]) {
+
+					if ((img_height != capture_imgs[i].rows) || (img_width != capture_imgs[i].cols)) {
+						std::cout << "Different image size: input (" << capture_imgs[i].rows << ", " << capture_imgs[i].cols;
+						std::cout << ") Expected (" << img_height << ", " << img_width << ")" << std::endl;
+						exit(EXIT_FAILURE);
+					}
 
 					glBindBuffer(GL_PIXEL_UNPACK_BUFFER, img_pixel_buffers[i]);
 
@@ -332,7 +288,7 @@ namespace fvp {
 					// If you do that, the previous data in PBO will be discarded and
 					// glMapBufferARB() returns a new allocated pointer immediately
 					// even if GPU is still working with the previous data.
-					int SRC_DATA_SIZE = processed_srcs[i].cols * processed_srcs[i].rows * 3;
+					int SRC_DATA_SIZE = capture_imgs[i].cols * capture_imgs[i].rows * 3;
 					glBufferData(GL_PIXEL_UNPACK_BUFFER, SRC_DATA_SIZE, 0, GL_DYNAMIC_DRAW);
 					GLubyte* ptr = (GLubyte*)glMapBuffer(GL_PIXEL_UNPACK_BUFFER, GL_WRITE_ONLY);
 					if (ptr)
@@ -341,17 +297,17 @@ namespace fvp {
 							std::lock_guard<std::mutex> lock(*mtxs[i]);
 							// update data directly on the mapped buffer
 							//updatePixels(ptr, DATA_SIZE);
-							memcpy(ptr, processed_srcs[i].data, SRC_DATA_SIZE);
+							memcpy(ptr, capture_imgs[i].data, SRC_DATA_SIZE);
 						}
 						glUnmapBuffer(GL_PIXEL_UNPACK_BUFFER); // release pointer to mapping buffer
 					}
-					glTexSubImage3D(GL_TEXTURE_2D_ARRAY, 0, 0, 0, GLint(i), processed_srcs[i].cols, processed_srcs[i].rows, 1, GL_BGR, GL_UNSIGNED_BYTE, nullptr);
-					processed_srcs_is_new[i] = false;
+					glTexSubImage3D(GL_TEXTURE_2D_ARRAY, 0, 0, 0, GLint(i), capture_imgs[i].cols, capture_imgs[i].rows, 1, GL_BGR, GL_UNSIGNED_BYTE, nullptr);
+					imgs_update_required[i] = false;
 				}
 			}
 			// LRF Data update
 			//LRF_data_is_new = true;
-			if (LRF_data_is_new)
+			if (LRF_update_required)
 			{
 				std::vector<float> vertices;
 				std::vector<GLuint> elements;
@@ -371,7 +327,7 @@ namespace fvp {
 
 				glBindVertexArray(0);
 
-				LRF_data_is_new = false;
+				LRF_update_required = false;
 			}
 		}
 
@@ -396,10 +352,7 @@ namespace fvp {
 		std::vector<cv::Mat> capture_imgs;
 		std::vector<GLuint> img_pixel_buffers;
 		std::vector<cv::Mat> fisheye_views;
-
-		std::vector<cv::Mat> raw_srcs;
-		std::vector<cv::Mat> processed_srcs;
-		std::vector<bool> processed_srcs_is_new;
+		std::vector<bool> imgs_update_required;
 		std::vector<std::mutex*> mtxs;
 
 		// LRF data
@@ -410,7 +363,7 @@ namespace fvp {
 		unsigned int LRF_vaoHandle;
 		unsigned int LRF_handle[2];
 		std::mutex LRF_mtx;
-		bool LRF_data_is_new;
+		bool LRF_update_required;
 
 
 	public:

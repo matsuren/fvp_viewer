@@ -25,6 +25,7 @@ using glm::vec3;
 
 namespace fvp {
 	System::System(const std::shared_ptr<Config> &config) : cfg(config), m_animate(false) {
+		gl_model_mgr = std::make_unique<GLModelManager>();
 	}
 	//-----------------------------------------------------------------------------
 	void System::initScene()
@@ -37,17 +38,17 @@ namespace fvp {
 		const std::string robot_model_file = cfg->robot_model_filename();
 		assimp_robot = new Mesh(robot_model_file);
 		assimp_robot->setProgram(&prog_robot);
-		GLModelManager::getInstance().setDrawableModel("robot", assimp_robot);
+		gl_model_mgr->setDrawableModel("robot", assimp_robot);
 
 		////////////////////////////////
 		// Load GL model
 		////////////////////////////////
 		dome = new GLModelDome(2.0f, 50);
-		GLModelManager::getInstance().setDrawableModel("dome", dome);
+		gl_model_mgr->setDrawableModel("dome", dome);
 
 		float plane_size = 10.0f;
 		plane_floor = new VBOPlane(plane_size, plane_size, 1, 1);
-		GLModelManager::getInstance().setDrawableModel("floor", plane_floor);
+		gl_model_mgr->setDrawableModel("floor", plane_floor);
 
 		////////////////////////////////
 		// Load model matrix
@@ -55,122 +56,32 @@ namespace fvp {
 		mat4 tmp_model_mat = mat4(1.0f);
 		tmp_model_mat *= glm::translate(vec3(0.0f, 0.0f, 0.0f));
 		tmp_model_mat *= glm::rotate(glm::radians(90.0f), vec3(1.0f, 0.0f, 0.0f));
-		GLModelManager::getInstance().setModelMatrix("dome", tmp_model_mat);
-		GLModelManager::getInstance().setModelMatrix("floor", tmp_model_mat);
+		gl_model_mgr->setModelMatrix("dome", tmp_model_mat);
+		gl_model_mgr->setModelMatrix("floor", tmp_model_mat);
 
 		double lrf_x, lrf_y, lrf_rad;
 		tmp_model_mat = mat4(1.0f);
 		cfg->getLRFPose(lrf_x, lrf_y, lrf_rad);
 		tmp_model_mat *= glm::translate(vec3(lrf_x, lrf_y, 0.0f));
 		tmp_model_mat *= glm::rotate(float(lrf_rad), vec3(0.0f, 0.0f, 1.0f));
-		GLModelManager::getInstance().setModelMatrix("LRF", tmp_model_mat);
+		gl_model_mgr->setModelMatrix("LRF", tmp_model_mat);
 
 		tmp_model_mat = mat4(1.0f);
 		tmp_model_mat *= glm::rotate(glm::radians(180.0f), vec3(1.0f, 0.0f, 0.0f));
 
 		cv::Mat cv_model_mat;
 		cfg->getRobotPose(cv_model_mat);
-		GLModelManager::getInstance().setModelMatrix("robot", cv_model_mat);
+		gl_model_mgr->setModelMatrix("robot", cv_model_mat);
 		prog.use();
 
-		gl_data_mng->initialize();
-		// Load texture file to texture array
-		glActiveTexture(GL_TEXTURE0);
-		GLuint texID;
-		glGenTextures(1, &texID);
-		glBindTexture(GL_TEXTURE_2D_ARRAY, texID);
-		glTexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-		glTexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-		glTexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_BORDER);
-		glTexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_BORDER);
-
-		// Load image
-		for (int i = 0; i < CAMERA_NUM; i++)
-		{
-			cv::Mat mat_data;
-			if (gl_data_mng->getCameraImage(mat_data, i) != 0)
-				exit(EXIT_FAILURE);
-			img_width = mat_data.cols;
-			img_height = mat_data.rows;
-
-			// allocate memory
-			if (i == 0) {
-				glTexImage3D(GL_TEXTURE_2D_ARRAY, 0, GL_RGB, img_width, img_height, CAMERA_NUM, 0, GL_BGR, GL_UNSIGNED_BYTE, nullptr);
-				// glTexStorage3D(GL_TEXTURE_2D_ARRAY, 1, GL_RGB8, width, height, CAMERA_NUM);
-			}
-
-			//create a pixel buffer object. you need to delete them when program exits.
-			GLuint pixel_buffer;
-			glGenBuffers(1, &pixel_buffer);
-			gl_data_mng->setPixelbuffer(pixel_buffer, i);
-			glBindBuffer(GL_PIXEL_UNPACK_BUFFER, pixel_buffer);
-			glBufferData(GL_PIXEL_UNPACK_BUFFER, 3 * img_width*img_height, mat_data.data, GL_DYNAMIC_DRAW);
-			// send data
-			glTexSubImage3D(GL_TEXTURE_2D_ARRAY, 0, 0, 0, i, img_width, img_height, 1, GL_BGR, GL_UNSIGNED_BYTE, nullptr);
-		}
-
-		// for OCamCalib
-		for (int i = 0; i < CAMERA_NUM; i++)
-		{
-			/* --------------------------------------------------------------------*/
-			/* Read the parameters of the omnidirectional camera from the TXT file */
-			/* --------------------------------------------------------------------*/
-			struct ocam_model o; // our ocam_models for the fisheye and catadioptric cameras
-								 //get_ocam_model(&o, DATA_PATH"/data/calib_results_fisheye.txt");
-			std::string ocam_fname = cfg->calib_filenames(i);
-			if (get_ocam_model(&o, ocam_fname.c_str()) == -1)
-			{
-				exit(EXIT_FAILURE);
-			}
-
-			/* --------------------------------------------------------------------*/
-			/* Print ocam_model parameters                                         */
-			/* --------------------------------------------------------------------*/
-			std::string ocamparam_name = "OCamParams[" + std::to_string(i) + "]";
-			std::cout << "OcamParam name : " << ocamparam_name << std::endl;
-			const int INVPOL_MAX = 14;
-			const int POL_MAX = 6;
-			while (o.length_invpol < INVPOL_MAX) {
-				o.invpol[o.length_invpol] = 0;
-				o.length_invpol++;
-			}
-			while (o.length_pol < POL_MAX) {
-				o.pol[o.length_pol] = 0;
-				o.length_pol++;
-			}
-
-			printf("pol =\n");    for (int i = 0; i < o.length_pol; i++) { printf("\t%e\n", o.pol[i]); };    printf("\n");
-			printf("invpol =\n"); for (int i = 0; i < o.length_invpol; i++) { printf("\t%e\n", o.invpol[i]); }; printf("\n");
-			printf("\nxc = %f\nyc = %f\n\nwidth = %d\nheight = %d\n", o.xc, o.yc, o.width, o.height);
-			prog.setUniform(ocamparam_name + ".xc", o.xc);
-			prog.setUniform(ocamparam_name + ".yc", o.yc);
-			prog.setUniform(ocamparam_name + ".c", o.c);
-			prog.setUniform(ocamparam_name + ".d", o.d);
-			prog.setUniform(ocamparam_name + ".e", o.e);
-			prog.setUniform(ocamparam_name + ".width", float(o.width));
-			prog.setUniform(ocamparam_name + ".height", float(o.height));
-			// set array 
-			prog.setUniform(ocamparam_name + ".invpol", o.invpol, INVPOL_MAX);
-			prog.setUniform(ocamparam_name + ".pol", o.pol, POL_MAX);
-
-			// set fov
-			//prog.setUniform(ocamparam_name + ".fov", M_PI);
-		}
-
-		prog.setUniform("CAMERA_NUM", CAMERA_NUM);
+		// Load sample images into GPU
+		gl_data_mgr->initializeFisheye(prog);
+		gl_data_mgr->initializeLRF();
 
 		prog.printActiveAttribs();
 		prog.printActiveUniformBlocks();
 		prog.printActiveUniforms();
 		std::cout << std::endl;
-		//prog.use();
-		//gl_data_mng->initializeFisheye(prog);
-		//gl_data_mng->initializeLRF(prog_robot);
-
-		//prog.printActiveAttribs();
-		//prog.printActiveUniformBlocks();
-		//prog.printActiveUniforms();
-		//std::cout << std::endl;
 
 		// -------------------------------------------------
 		// set Camera View Matrix  ---------
@@ -186,13 +97,13 @@ namespace fvp {
 				std::string key = "img" + std::to_string(i) + "origin";
 				cv::Mat pose;
 				fs[key] >> pose;
-				gl_data_mng->setCameraViewMatrix(pose, i);
+				gl_data_mgr->setCameraViewMatrix(pose, i);
 			}
 		}
 
 		for (int i = 0; i < CAMERA_NUM; i++) {
 			cv::Mat tmp_viewmat;
-			gl_data_mng->getCameraViewMatrix(tmp_viewmat, i);
+			gl_data_mgr->getCameraViewMatrix(tmp_viewmat, i);
 			fisheye_views[i] = glm::make_mat4(tmp_viewmat.ptr<float>(0, 0));
 		}
 
@@ -219,8 +130,8 @@ namespace fvp {
 	void System::update(float t)
 	{
 		GLCameraManager::getInstance().update(t);
-		GLModelManager::getInstance().update(t);
-		gl_data_mng->update(t);
+		gl_model_mgr->update(t);
+		gl_data_mgr->update(t);
 	}
 	//-----------------------------------------------------------------------------
 	void System::render()
@@ -236,28 +147,28 @@ namespace fvp {
 
 		if (RENDER_MODE == 1)
 		{
-			ModelMatrix = GLModelManager::getInstance().getModelMatrix("floor");
+			ModelMatrix = gl_model_mgr->getModelMatrix("floor");
 			setMatrices();
-			GLModelManager::getInstance().drawModel("floor");
+			gl_model_mgr->drawModel("floor");
 		}
 		else if (RENDER_MODE == 2)
 		{
-			ModelMatrix = GLModelManager::getInstance().getModelMatrix("dome");
+			ModelMatrix = gl_model_mgr->getModelMatrix("dome");
 			setMatrices();
-			GLModelManager::getInstance().drawModel("dome");
+			gl_model_mgr->drawModel("dome");
 		}
 		else if (RENDER_MODE == 3)
 		{
-			ModelMatrix = GLModelManager::getInstance().getModelMatrix("LRF");
+			ModelMatrix = gl_model_mgr->getModelMatrix("LRF");
 			setMatrices();
-			gl_data_mng->drawModel("LRF");
+			gl_data_mgr->drawModel("LRF");
 		}
 
 		prog_robot.use();
 		// draw robot
-		ModelMatrix = GLModelManager::getInstance().getModelMatrix("robot");
+		ModelMatrix = gl_model_mgr->getModelMatrix("robot");
 		setMatricesPassthrough();
-		GLModelManager::getInstance().drawModel("robot");
+		gl_model_mgr->drawModel("robot");
 
 
 	}

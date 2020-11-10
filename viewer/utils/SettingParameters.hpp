@@ -118,7 +118,7 @@ namespace fvp {
 			return data.record_folder;
 		}
 		size_t num_camera() {
-			return data.sample_image_files.size();
+			return data.image_sources.size();
 		}
 		void getRobotPose(cv::Mat &trans_matrix) {
 			const auto fs = cv::FileStorage(data.calib_folder + "/" + data.robot_align_yml, cv::FileStorage::READ);

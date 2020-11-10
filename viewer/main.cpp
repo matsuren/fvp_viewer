@@ -4,7 +4,7 @@
 
 #include "glutils.h"
 #include "fvp_system.h"
-#include "SensorDataManager.hpp"
+#include "GLDataManager.hpp"
 #include "GLCameraManager.hpp"
 #include "RecordImageManager.hpp"
 #include "SettingParameters.hpp"

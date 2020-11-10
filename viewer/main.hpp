@@ -1,7 +1,7 @@
 #pragma once
-
 #include <atomic>
 
+#include "cookbookogl.h"
 
 // ----- global --------
 // thread exit

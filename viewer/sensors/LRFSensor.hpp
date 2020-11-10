@@ -29,7 +29,7 @@ public:
 
 	bool isOpened = false;
 
-	
+
 	static int loadLRFDataCSV(const std::string lrf_fname, std::vector<LRFPoint> &LRF_data) {
 		std::ifstream ifs_lrf(lrf_fname);
 		if (!ifs_lrf) {

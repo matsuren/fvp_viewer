@@ -9,7 +9,7 @@ namespace fvp {
 	class GLModelManager {
 	public:
 		GLModelManager() {};
-		
+
 		// update
 		void update(float t)
 		{

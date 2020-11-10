@@ -89,7 +89,7 @@ namespace fvp {
 				glBufferData(GL_PIXEL_UNPACK_BUFFER, 3 * img_width*img_height, mat_data.data, GL_DYNAMIC_DRAW);
 				// send data
 				glTexSubImage3D(GL_TEXTURE_2D_ARRAY, 0, 0, 0, i, img_width, img_height, 1, GL_BGR, GL_UNSIGNED_BYTE, nullptr);
-			
+
 				imgs_update_required[i] = false;
 			}
 
@@ -147,14 +147,14 @@ namespace fvp {
 
 		int initializeLRF()
 		{
-	
+
 			//////////////////////////
 			// load LRF data
 			//////////////////////////
 			std::lock_guard<std::mutex> lock(LRF_mtx);
 			LRFSensor::loadLRFDataCSV(cfg->lrf_data_filename(), LRF_data);
 			LRFSensor::getLRFGLdata(LRF_data, triangle_mesh_vertices, triangle_mesh_elements, LRF_model_height);
-				
+
 			LRF_vertices_num = int(triangle_mesh_vertices.size());
 			glGenVertexArrays(1, &LRF_vaoHandle);
 			glBindVertexArray(LRF_vaoHandle);

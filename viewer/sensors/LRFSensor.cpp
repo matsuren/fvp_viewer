@@ -5,7 +5,7 @@
 
 using namespace qrk;
 //-----------------------------------------------------------------------------
-LRFSensor::LRFSensor(int argc, char *argv[]){
+LRFSensor::LRFSensor(int argc, char *argv[]) {
 	Connection_information information(argc, argv);
 
 	// Connects to the sensor

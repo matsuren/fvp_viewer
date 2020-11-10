@@ -12,9 +12,9 @@ using glm::vec3;
 using glm::vec2;
 
 // singleton GLCameraManager CLASS
-class GLCameraManager { 
+class GLCameraManager {
 private:
-	GLCameraManager() :angle(glm::radians(-95.0f)), phi(glm::radians(30.0f)), tPrev(0.0f), 
+	GLCameraManager() :angle(glm::radians(-95.0f)), phi(glm::radians(30.0f)), tPrev(0.0f),
 		rotSpeed(glm::pi<float>() / 20.0f), isAnimation(false), phi_min(0.0f), phi_max(M_PI / 2.0f - 0.00001f)
 	{
 		std::cout << "initialize GLCameraManager : " << std::endl;
@@ -30,7 +30,7 @@ public:
 		static GLCameraManager inst;
 		return inst;
 	}
-	
+
 	// update
 	void update(float t)
 	{

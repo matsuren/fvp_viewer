@@ -5,6 +5,7 @@
 #include <fstream>
 using std::ifstream;
 using std::ios;
+using std::ios;
 
 #include <sstream>
 #include <sys/stat.h>

@@ -6,9 +6,6 @@
 #include <cstdlib>
 #include <array>
 #include <iostream>
-using std::cout;
-using std::cerr;
-using std::endl;
 
 #include "glutils.h"
 
@@ -230,7 +227,7 @@ namespace fvp {
 			//prog_robot.use();
 		}
 		catch (GLSLProgramException & e) {
-			cerr << e.what() << endl;
+			std::cerr << e.what() << std::endl;
 			exit(EXIT_FAILURE);
 		}
 	}

@@ -6,7 +6,6 @@
 #include "fvp_system.h"
 #include "GLDataManager.hpp"
 #include "GLCameraManager.hpp"
-#include "RecordImageManager.hpp"
 #include "SettingParameters.hpp"
 
 #include <cstdio>
@@ -21,7 +20,6 @@
 #include <sstream>
 #include <atomic>
 #include <iomanip>
-using std::stringstream;
 
 fvp::System* fvp_system;
 GLFWwindow* window;
@@ -54,13 +52,6 @@ static void key_callback(GLFWwindow* window, int key, int scancode, int action, 
 		GLCameraManager::getInstance().angle += 0.01f;
 	if (key == GLFW_KEY_LEFT && action == GLFW_RELEASE)
 		GLCameraManager::getInstance().angle -= 0.01f;
-	if (key == GLFW_KEY_R && action == GLFW_RELEASE)
-		if (RecordImageManager::getInstance().isRecorded()) {
-			RecordImageManager::getInstance().stopRecord();
-		}
-		else {
-			RecordImageManager::getInstance().startRecord();
-		}
 	if (key == GLFW_KEY_P && action == GLFW_RELEASE) {
 		char* buffer;
 		int width, height;
@@ -145,20 +136,10 @@ void mainLoop() {
 				sum += time[i + 1] - time[i];
 			float fps = samples / sum;
 
-			stringstream strm;
+			std::stringstream strm;
 			strm << title;
 			strm.precision(4);
 			strm << " (fps: " << fps << ")";
-
-
-			if (RecordImageManager::getInstance().isRecorded()) {
-				strm << "  ****** Recording now ******   'r' : stop record";
-			}
-			else {
-				strm << "   'r' : start record";
-			}
-			strm << std::fixed << std::setprecision(2)
-				<< "   recorded time : " << RecordImageManager::getInstance().getElapsedSec() << "s";
 			glfwSetWindowTitle(window, strm.str().c_str());
 		}
 	}

@@ -22,6 +22,11 @@ namespace fvp {
 		int img_width, img_height;
 		GLuint texID;
 
+
+		// Triangle mesh from sensors such as LRF
+		std::vector<float> triangle_mesh_vertices;
+		std::vector<GLuint> triangle_mesh_elements;
+
 	public:
 		bool is_initialized;
 
@@ -84,6 +89,8 @@ namespace fvp {
 				glBufferData(GL_PIXEL_UNPACK_BUFFER, 3 * img_width*img_height, mat_data.data, GL_DYNAMIC_DRAW);
 				// send data
 				glTexSubImage3D(GL_TEXTURE_2D_ARRAY, 0, 0, 0, i, img_width, img_height, 1, GL_BGR, GL_UNSIGNED_BYTE, nullptr);
+			
+				imgs_update_required[i] = false;
 			}
 
 			// for OCamCalib
@@ -144,37 +151,22 @@ namespace fvp {
 			//////////////////////////
 			// load LRF data
 			//////////////////////////
-			std::ifstream ifs_lrf(cfg->lrf_data_filename());
-			if (!ifs_lrf) {
-				std::cout << "error !\n cannot read LRF data file : " << cfg->lrf_data_filename() << std::endl;
-				return 1;
-			}
-			// read from csv file
-			LRF_data.clear();
-			std::string str;
-			while (getline(ifs_lrf, str)) {
-				std::vector<std::string> ret_str = split(str, ",");
-				LRFPoint tmp_pair(std::stof(ret_str[0]), std::stof(ret_str[1]));
-				LRF_data.push_back(tmp_pair);
-			}
-
-			std::vector<float> vertices;
-			std::vector<GLuint> elements;
-
-			getLRFGLdata(LRF_data, vertices, elements);
-
-			LRF_vertices_num = int(vertices.size());
+			std::lock_guard<std::mutex> lock(LRF_mtx);
+			LRFSensor::loadLRFDataCSV(cfg->lrf_data_filename(), LRF_data);
+			LRFSensor::getLRFGLdata(LRF_data, triangle_mesh_vertices, triangle_mesh_elements, LRF_model_height);
+				
+			LRF_vertices_num = int(triangle_mesh_vertices.size());
 			glGenVertexArrays(1, &LRF_vaoHandle);
 			glBindVertexArray(LRF_vaoHandle);
 			glGenBuffers(2, LRF_handle);
 
 			glBindBuffer(GL_ARRAY_BUFFER, LRF_handle[0]);
-			glBufferData(GL_ARRAY_BUFFER, vertices.size() * sizeof(float), &vertices[0], GL_DYNAMIC_DRAW);
+			glBufferData(GL_ARRAY_BUFFER, triangle_mesh_vertices.size() * sizeof(float), &triangle_mesh_vertices[0], GL_DYNAMIC_DRAW);
 			glVertexAttribPointer((GLuint)0, 3, GL_FLOAT, GL_FALSE, 0, ((GLubyte *)NULL + (0)));
 			glEnableVertexAttribArray(0);  // Vertex position
 
 			glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, LRF_handle[1]);
-			glBufferData(GL_ELEMENT_ARRAY_BUFFER, elements.size() * sizeof(GLuint), &elements[0], GL_DYNAMIC_DRAW);
+			glBufferData(GL_ELEMENT_ARRAY_BUFFER, triangle_mesh_elements.size() * sizeof(GLuint), &triangle_mesh_elements[0], GL_DYNAMIC_DRAW);
 
 			glBindVertexArray(0);
 			LRF_update_required = false;
@@ -306,24 +298,20 @@ namespace fvp {
 				}
 			}
 			// LRF Data update
-			//LRF_data_is_new = true;
 			if (LRF_update_required)
 			{
-				std::vector<float> vertices;
-				std::vector<GLuint> elements;
-
 				std::lock_guard<std::mutex> lock(LRF_mtx);
-				getLRFGLdata(LRF_data, vertices, elements);
-				LRF_vertices_num = int(vertices.size());
+				LRFSensor::getLRFGLdata(LRF_data, triangle_mesh_vertices, triangle_mesh_elements, LRF_model_height);
+				LRF_vertices_num = int(triangle_mesh_vertices.size());
 				glBindVertexArray(LRF_vaoHandle);
 
 				glBindBuffer(GL_ARRAY_BUFFER, LRF_handle[0]);
-				glBufferData(GL_ARRAY_BUFFER, vertices.size() * sizeof(float), &vertices[0], GL_DYNAMIC_DRAW);
+				glBufferData(GL_ARRAY_BUFFER, triangle_mesh_vertices.size() * sizeof(float), &triangle_mesh_vertices[0], GL_DYNAMIC_DRAW);
 				glVertexAttribPointer((GLuint)0, 3, GL_FLOAT, GL_FALSE, 0, ((GLubyte *)NULL + (0)));
 				glEnableVertexAttribArray(0);  // Vertex position
 
 				glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, LRF_handle[1]);
-				glBufferData(GL_ELEMENT_ARRAY_BUFFER, elements.size() * sizeof(GLuint), &elements[0], GL_DYNAMIC_DRAW);
+				glBufferData(GL_ELEMENT_ARRAY_BUFFER, triangle_mesh_elements.size() * sizeof(GLuint), &triangle_mesh_elements[0], GL_DYNAMIC_DRAW);
 
 				glBindVertexArray(0);
 
@@ -356,7 +344,6 @@ namespace fvp {
 		std::vector<std::mutex*> mtxs;
 
 		// LRF data
-		LRFSensor *LRF_sensor;
 		std::vector<LRFPoint> LRF_data;
 		float LRF_model_height = 3.0f;
 		int LRF_vertices_num = 0;
@@ -364,110 +351,6 @@ namespace fvp {
 		unsigned int LRF_handle[2];
 		std::mutex LRF_mtx;
 		bool LRF_update_required;
-
-
-	public:
-		//-----------------------------------------------------------------------------
-		std::vector<std::string> split(const std::string& s, const std::string delim)
-		{
-			std::vector<std::string> result;
-			result.clear();
-
-			using string = std::string;
-			string::size_type pos = 0;
-
-			while (pos != string::npos)
-			{
-				string::size_type p = s.find(delim, pos);
-
-				if (p == string::npos)
-				{
-					result.push_back(s.substr(pos));
-					break;
-				}
-				else {
-					result.push_back(s.substr(pos, p - pos));
-				}
-
-				pos = p + delim.size();
-			}
-
-			// compress
-			for (size_t i = 0; i < result.size(); i++) {
-				if (result[i] == "" || result[i] == delim) {
-					result.erase(result.begin() + i);
-					i--;
-				}
-			}
-
-			return result;
-		}
-		//-----------------------------------------------------------------------------
-		void getLRFGLdata(const std::vector<LRFPoint> &LRF_data,
-			std::vector<float> &vertices, std::vector<GLuint> &elements)
-		{
-			const double distance_threshold = 30.0;
-			vertices.clear();
-			vertices.reserve(3 * 4 * 1200);
-			elements.clear();
-			elements.reserve(3 * 3 * 1200);
-
-			// origin
-			vertices.push_back(0.0f);
-			vertices.push_back(0.0f);
-			vertices.push_back(0.0f);
-
-			for (size_t i = 1; i < LRF_data.size(); i++)
-			{
-				double diff_x = LRF_data[i].x - LRF_data[i - 1].x;
-				double diff_y = LRF_data[i].y - LRF_data[i - 1].y;
-				double distance = sqrt(diff_x * diff_x + diff_y * diff_y);
-
-				int current_num = int(vertices.size() / 3);
-				// vertex
-				vertices.push_back(LRF_data[i - 1].x);
-				vertices.push_back(LRF_data[i - 1].y);
-				vertices.push_back(0.0f);
-
-				vertices.push_back(LRF_data[i - 1].x);
-				vertices.push_back(LRF_data[i - 1].y);
-				vertices.push_back(LRF_model_height);
-
-				vertices.push_back(LRF_data[i].x);
-				vertices.push_back(LRF_data[i].y);
-				vertices.push_back(LRF_model_height);
-
-				vertices.push_back(LRF_data[i].x);
-				vertices.push_back(LRF_data[i].y);
-				vertices.push_back(0.0f);
-
-				if (distance < distance_threshold)
-				{
-					// element
-					elements.push_back(current_num);
-					elements.push_back(current_num + 1);
-					elements.push_back(current_num + 2);
-
-					elements.push_back(current_num);
-					elements.push_back(current_num + 2);
-					elements.push_back(current_num + 3);
-				}
-
-				// floor
-				elements.push_back(0);
-				elements.push_back(current_num);
-				elements.push_back(current_num + 3);
-
-			}
-
-			// floor loop close
-			elements.push_back(0);
-			int current_num = int(vertices.size() / 3) - 1;
-			elements.push_back(current_num);
-			elements.push_back(1);
-		}
-		//------------------------------------------------------------------------------
-
 	};
 
 }

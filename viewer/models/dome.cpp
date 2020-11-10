@@ -6,7 +6,7 @@
 #define _USE_MATH_DEFINES
 #include <math.h>
 
-namespace model{
+namespace model {
 	Dome::Dome(float radius, int divide_num)
 	{
 		std::vector<float> vertices;

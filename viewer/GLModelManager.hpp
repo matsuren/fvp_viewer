@@ -3,7 +3,7 @@
 #include <glm/glm.hpp>
 using glm::mat4;
 #include <opencv2/core.hpp>
-#include "models/drawable.h"
+#include "models/drawable.hpp"
 
 namespace fvp {
 	class GLModelManager {
@@ -25,7 +25,7 @@ namespace fvp {
 		void drawModel(const std::string key) {
 			gl_models[key]->render();
 		}
-		void setDrawableModel(const std::string key, Drawable *object) {
+		void setDrawableModel(const std::string key, model::Drawable *object) {
 			gl_models[key] = object;
 		}
 
@@ -46,7 +46,7 @@ namespace fvp {
 			return model_matrices[key];
 		}
 	private:
-		std::map<std::string, Drawable*> gl_models;
+		std::map<std::string, model::Drawable*> gl_models;
 		std::map<std::string, mat4> model_matrices;
 	};
 

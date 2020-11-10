@@ -4,8 +4,8 @@
 #include <opencv2/core.hpp>
 #include <glm/glm.hpp>
 #include "glslprogram.h"
-#include "vboplane.h"
-#include "Mesh.h"
+#include "plane.hpp"
+#include "mesh.hpp"
 // OpenGL headers
 #include "cookbookogl.h"
 
@@ -30,11 +30,11 @@ private:
 	GLSLProgram prog;
 	GLSLProgram prog_robot;
 
-	VBOPlane *plane_floor;
-    VBOPlane *plane_wall;
-	VBOPlane *plane_wall2;
-	Drawable *dome;
-	Mesh *assimp_robot;
+	model::Plane *plane_floor;
+	model::Plane *plane_wall;
+	model::Plane *plane_wall2;
+	model::Drawable *dome;
+	model::Mesh *assimp_robot;
 
     mat4 ModelMatrix;
 	mat4 ViewMatrix;

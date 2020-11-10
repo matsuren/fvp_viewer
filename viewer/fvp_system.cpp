@@ -18,7 +18,7 @@ using glm::vec3;
 #include <glm/gtx/transform.hpp>
 #include <glm/gtx/string_cast.hpp>
 #include <glm/gtc/type_ptr.hpp>
-#include "models/GLModelDome.hpp"
+#include "models/dome.hpp"
 
 #include "GLCameraManager.hpp"
 #include "GLModelManager.hpp"
@@ -36,18 +36,18 @@ namespace fvp {
 		glEnable(GL_DEPTH_TEST);
 
 		const std::string robot_model_file = cfg->robot_model_filename();
-		assimp_robot = new Mesh(robot_model_file);
+		assimp_robot = new model::Mesh(robot_model_file);
 		assimp_robot->setProgram(&prog_robot);
 		gl_model_mgr->setDrawableModel("robot", assimp_robot);
 
 		////////////////////////////////
 		// Load GL model
 		////////////////////////////////
-		dome = new GLModelDome(2.0f, 50);
+		dome = new model::Dome(2.0f, 50);
 		gl_model_mgr->setDrawableModel("dome", dome);
 
 		float plane_size = 10.0f;
-		plane_floor = new VBOPlane(plane_size, plane_size, 1, 1);
+		plane_floor = new model::Plane(plane_size, plane_size, 1, 1);
 		gl_model_mgr->setDrawableModel("floor", plane_floor);
 
 		////////////////////////////////

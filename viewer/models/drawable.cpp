@@ -1,5 +1,7 @@
-#include "drawable.h"
+#include "drawable.hpp"
 
-Drawable::Drawable()
-{
+namespace model {
+	Drawable::Drawable()
+	{
+	}
 }

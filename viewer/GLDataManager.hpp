@@ -158,9 +158,9 @@ class GLDataManager {
     // load LRF data
     //////////////////////////
     std::lock_guard<std::mutex> lock(LRF_mtx);
-    LRFSensor::loadLRFDataCSV(cfg->lrf_data_filename(), LRF_data);
-    LRFSensor::getLRFGLdata(LRF_data, triangle_mesh_vertices,
-                            triangle_mesh_elements, LRF_model_height);
+    sensor::LRFSensor::loadLRFDataCSV(cfg->lrf_data_filename(), LRF_data);
+    sensor::LRFSensor::getLRFGLdata(LRF_data, triangle_mesh_vertices,
+                                    triangle_mesh_elements, LRF_model_height);
 
     LRF_vertices_num = int(triangle_mesh_vertices.size());
     glGenVertexArrays(1, &LRF_vaoHandle);
@@ -245,7 +245,7 @@ class GLDataManager {
     return 0;
   }
 
-  int updateLRF(const std::vector<LRFPoint> &lrf_data) {
+  int updateLRF(const std::vector<sensor::LRFPoint> &lrf_data) {
     if (!is_initialized) return 0;
     std::lock_guard<std::mutex> lock(LRF_mtx);
     LRF_data.clear();
@@ -302,8 +302,8 @@ class GLDataManager {
     // LRF Data update
     if (LRF_update_required) {
       std::lock_guard<std::mutex> lock(LRF_mtx);
-      LRFSensor::getLRFGLdata(LRF_data, triangle_mesh_vertices,
-                              triangle_mesh_elements, LRF_model_height);
+      sensor::LRFSensor::getLRFGLdata(LRF_data, triangle_mesh_vertices,
+                                      triangle_mesh_elements, LRF_model_height);
       LRF_vertices_num = int(triangle_mesh_vertices.size());
       glBindVertexArray(LRF_vaoHandle);
 
@@ -348,7 +348,7 @@ class GLDataManager {
   std::vector<std::mutex *> mtxs;
 
   // LRF data
-  std::vector<LRFPoint> LRF_data;
+  std::vector<sensor::LRFPoint> LRF_data;
   float LRF_model_height = 3.0f;
   int LRF_vertices_num = 0;
   unsigned int LRF_vaoHandle;

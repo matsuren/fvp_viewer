@@ -1,6 +1,7 @@
 #include "main.hpp"
 
 #include <GLFW/glfw3.h>
+#include <rplidar.h>
 
 #include <cstdio>
 #include <cstdlib>
@@ -143,15 +144,76 @@ void error_callback(int error, const char *description) {
 }
 //-----------------------------------------------------------------------------
 
+#include <opencv2/core/core.hpp>
+#include <opencv2/highgui/highgui.hpp>
+
+#include "sensors/rplidar_lrf.hpp"
+#include "sensors/urg_lrf.hpp"
+
 int main(int argc, char *argv[]) {
+  const bool is_lrf_test = true;
+  if (is_lrf_test) {
+    spdlog::set_level(spdlog::level::trace);
+    std::shared_ptr<sensor::LRFSensor> LRF_sensor;
+
+    const sensor::LRFSensorType lrf_type = sensor::RPLIDAR;
+    switch (lrf_type) {
+      case sensor::URG: {
+        std::string str = "COM6";
+        char *writable = new char[str.size() + 1];
+        std::copy(str.begin(), str.end(), writable);
+        writable[str.size()] = '\0';  // don't forget the terminating 0
+        char *argv[] = {"exe", "-s", writable};
+        LRF_sensor = std::make_shared<sensor::UrgLRF>(3, argv);
+        // don't forget to free the string after finished using it
+        delete[] writable;
+      } break;
+      case sensor::RPLIDAR: {
+        std::string str = "com5";
+        LRF_sensor = std::make_shared<sensor::RplidarLRF>(str);
+      } break;
+      default:
+        break;
+    }
+    // for (size_t i = 0; i < 20; i++) {
+    //  LRF_sensor->grab();
+    //  std::vector<sensor::LRFPoint> tmp;
+    //  LRF_sensor->retrieve(tmp);
+    //  std::string key_name;
+    //  if (lrf_type == sensor::URG)
+    //    key_name = "urg";
+    //  else if (lrf_type == sensor::RPLIDAR)
+    //    key_name = "rp";
+    //  std::string filename = key_name + "_xy_" + std::to_string(i) + ".csv";
+    //  std::ofstream ofs(filename);
+    //  for (const auto &it : tmp) {
+    //    ofs << it.x << ", " << it.y << std::endl;
+    //  }
+    //}
+
+    while (true) {
+      LRF_sensor->grab();
+      std::vector<sensor::LRFPoint> tmp;
+      LRF_sensor->retrieve(tmp);
+      cv::Mat vis;
+      sensor::LRFSensor::drawPoints(tmp, vis);
+      cv::imshow("vis", vis);
+      int key = cv::waitKey(10);
+      if (key == 27) {
+        break;
+      }
+    }
+    return 0;
+  }
+
   std::cout << "+++++++++++++++++++++++++++++++++++++++" << std::endl;
   std::cout << "+++ Free viewpoint image generation +++" << std::endl;
   std::cout << "+++++++++++++++++++++++++++++++++++++++" << std::endl;
 
   // Set logger
   // Runtime log levels
-  spdlog::set_level(spdlog::level::info); 
-  //spdlog::set_level(spdlog::level::trace);
+  spdlog::set_level(spdlog::level::info);
+  // spdlog::set_level(spdlog::level::trace);
 
   std::unique_ptr<SensorManager> sensor_mgr;
   try {
@@ -204,7 +266,7 @@ int main(int argc, char *argv[]) {
     if (SPDLOG_LEVEL_DEBUG >= spdlog::get_level()) {
       GLUtils::dumpGLInfo();
     }
-   
+
     // Initialization
     initializeGL();
     resizeGL(WIN_WIDTH, WIN_HEIGHT);
@@ -217,7 +279,7 @@ int main(int argc, char *argv[]) {
 
     // Close window and terminate GLFW
     glfwTerminate();
-    
+
   } catch (const std::exception &e) {
     spdlog::error("Catch exception: {}", e.what());
     // Finish thread

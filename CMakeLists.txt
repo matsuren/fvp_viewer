@@ -107,6 +107,20 @@ list( APPEND PROJ_LIBS ${Spinnaker_LIBS} )
 find_package(spdlog REQUIRED)
 list( APPEND PROJ_LIBS spdlog::spdlog)
 
+# ##############################################################################
+#  rplidar SDK
+set(rplidar True)
+if(rplidar)
+    if(WIN32)
+      set(rplidar_LIBS 
+      debug "C:/dev/rplidar_sdk/sdk/workspaces/vc14/x64/Debug/rplidar_driver.lib" 
+      optimized "C:/dev/rplidar_sdk/sdk/workspaces/vc14/x64/Release/rplidar_driver.lib")
+      set(rplidar_INCLUDE_DIR
+          "C:/dev/rplidar_sdk/sdk/sdk/include" "C:/dev/rplidar_sdk/sdk/sdk/src")
+    endif(WIN32)
+endif(rplidar)
+list( APPEND PROJ_LIBS ${rplidar_LIBS} )
+
 ######################################################################
 # Recurse into the subdirectories. 
 add_subdirectory( viewer )

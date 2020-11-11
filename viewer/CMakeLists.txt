@@ -33,7 +33,7 @@ add_executable( ${PROJ_NAME} ${PROJ_SOURCES}  ${PROJ_HEADERS})
 include_directories( ${PROJ_INCLUDES} 
   "${CMAKE_CURRENT_LIST_DIR}/sensors" "${CMAKE_CURRENT_LIST_DIR}/glslcookbook"
   "${CMAKE_CURRENT_LIST_DIR}/models" "${CMAKE_CURRENT_LIST_DIR}/utils"
-   ${Spinnaker_INCLUDE_DIR}
+   ${Spinnaker_INCLUDE_DIR} ${rplidar_INCLUDE_DIR}
   )
 target_link_libraries( ${PROJ_NAME} ${PROJ_LIBS} ${OpenCV_LIBS} ${URG_LIBS})
 # directory structure    

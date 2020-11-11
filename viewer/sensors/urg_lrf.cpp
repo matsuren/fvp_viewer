@@ -1,14 +1,19 @@
-#include "LRFSensor.hpp"
+
+#include "sensors/urg_lrf.hpp"
+
+#include <spdlog/spdlog.h>
 
 #include <iostream>
-#include <spdlog/spdlog.h>
 
 #include "urg/Connection_information.hpp"
 #include "urg/Urg_driver.h"
 
 using namespace qrk;
+
+namespace sensor {
+
 //-----------------------------------------------------------------------------
-LRFSensor::LRFSensor(int argc, char *argv[]) {
+UrgLRF::UrgLRF(int argc, char *argv[]) {
   Connection_information information(argc, argv);
 
   // Connects to the sensor
@@ -41,7 +46,7 @@ LRFSensor::LRFSensor(int argc, char *argv[]) {
   }
 }
 //-----------------------------------------------------------------------------
-int LRFSensor::grab() {
+int UrgLRF::grab() {
   if (!isOpened) return 0;
 
   long time_stamp = 0;
@@ -55,7 +60,7 @@ int LRFSensor::grab() {
 }
 
 //-----------------------------------------------------------------------------
-bool LRFSensor::retrieve(std::vector<LRFPoint> &LRF_data) {
+bool UrgLRF::retrieve(std::vector<LRFPoint> &LRF_data) {
   LRF_data.clear();
   LRF_data.reserve(1200);
   // Prints the X-Y coordinates for all the measurement points
@@ -80,4 +85,4 @@ bool LRFSensor::retrieve(std::vector<LRFPoint> &LRF_data) {
   }
   return true;
 }
-//-----------------------------------------------------------------------------
+}  // namespace sensor

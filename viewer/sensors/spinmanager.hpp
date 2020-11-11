@@ -1,10 +1,14 @@
 #pragma once
+#include <spdlog/spdlog.h>
+
 #include <iostream>
 #include <string>
-#include <spdlog/spdlog.h>
+
 #include "Spinnaker.h"
 
 using namespace Spinnaker;
+
+namespace sensor {
 
 class SpinManager {
  public:
@@ -55,3 +59,4 @@ class SpinManager {
   SystemPtr system;
   std::vector<CameraPtr> pCams;
 };
+}  // namespace sensor

@@ -1,10 +1,14 @@
 #pragma once
-#include <urg/Urg_driver.h>
+#include <spdlog/spdlog.h>
 
 #include <fstream>
 #include <iostream>
+#include <opencv2/imgproc/imgproc.hpp>
 #include <vector>
-#include<spdlog/spdlog.h>
+
+namespace sensor {
+
+enum LRFSensorType { URG = 0, RPLIDAR };
 
 struct LRFPoint {
   float x;
@@ -21,16 +25,14 @@ struct LRFPoint {
 
 class LRFSensor {
  public:
-  LRFSensor(int argc, char *argv[]);
+  LRFSensor(){};
 
-  int grab(void);
-  bool retrieve(std::vector<LRFPoint> &LRF_data);
-
-  bool isOpened = false;
+  virtual int grab(void) = 0;
+  virtual bool retrieve(std::vector<LRFPoint> &LRF_data) = 0;
 
   static int loadLRFDataCSV(const std::string lrf_fname,
                             std::vector<LRFPoint> &LRF_data) {
-    spdlog::info("Loading {}", lrf_fname); 
+    spdlog::info("Loading {}", lrf_fname);
     std::ifstream ifs_lrf(lrf_fname);
     if (!ifs_lrf) {
       spdlog::error("Cannot load LRF data file:{}", lrf_fname);
@@ -44,7 +46,7 @@ class LRFSensor {
       LRFPoint tmp_pair(std::stof(ret_str[0]), std::stof(ret_str[1]));
       LRF_data.push_back(tmp_pair);
     }
-	return 0;
+    return 0;
   }
 
   static std::vector<std::string> split(const std::string &s,
@@ -84,9 +86,9 @@ class LRFSensor {
                            std::vector<unsigned int> &elements, float height) {
     const double distance_threshold = 30.0;
     vertices.clear();
-    vertices.reserve(3 * 4 * 1200);
+    vertices.reserve(3 * 4 * 1800);
     elements.clear();
-    elements.reserve(3 * 3 * 1200);
+    elements.reserve(3 * 3 * 1800);
 
     // origin
     vertices.push_back(0.0f);
@@ -140,13 +142,21 @@ class LRFSensor {
     elements.push_back(1);
   }
 
- private:
-  qrk::Urg_driver urg;
-  std::vector<long> data;
+  static void drawPoints(const std::vector<LRFPoint> &LRF_data, cv::Mat &dst,
+                         const int img_width = 600,
+                         const double max_dist = 5.0) {
+    dst = cv::Mat::zeros(cv::Size(img_width, img_width), CV_8UC3);
+    cv::circle(dst, cv::Point2d(img_width / 2, img_width / 2), 3,
+               cv::Scalar(0, 255, 0), -1);
+    for (const auto &it : LRF_data) {
+      int u = int(img_width * it.x / max_dist + img_width / 2.0);
+      int v = int(-img_width * it.y / max_dist + img_width / 2.0);
+      // point outside image is not drawn
+      cv::circle(dst, cv::Point2d(u, v), 3, cv::Scalar(0, 0, 255), -1);
+    }
+  }
 
-  // double radian = urg.index2rad(int(i));
-  // index2cos : cos(radian)
-  std::vector<double> index2cos;
-  // index2sin : sin(radian)
-  std::vector<double> index2sin;
+ protected:
+  bool isOpened = false;
 };
+}  // namespace sensor

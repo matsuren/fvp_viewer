@@ -5,6 +5,8 @@
 
 using namespace Spinnaker;
 
+namespace sensor {
+
 class SpinCam;
 using SpinCamPtr = std::shared_ptr<SpinCam>;
 
@@ -57,3 +59,4 @@ class SpinMultiCam {
  private:
   std::vector<SpinCamPtr> spincams;
 };
+}  // namespace sensor

@@ -11,6 +11,8 @@
 
 using namespace Spinnaker;
 
+namespace sensor {
+
 class SpinCam;
 using SpinCamPtr = std::shared_ptr<SpinCam>;
 
@@ -35,8 +37,8 @@ SpinCam::SpinCam(CameraPtr pCam_) {
     spdlog::info("Device model:{}", model);
     spdlog::info("Serial number:{}", serial);
     if (model == "Grasshopper3 GS3-U3-41C6C") {
-      spdlog::info("Set ROI since Model is {}", model);
-      setROI(224, 224, 1600, 1600);
+      // spdlog::info("Set ROI since Model is {}", model);
+      // setROI(224, 224, 1600, 1600);
     }
 
     // White balance
@@ -254,3 +256,4 @@ void SpinMultiCam::release() {
     it->release();
   }
 }
+}  // namespace sensor

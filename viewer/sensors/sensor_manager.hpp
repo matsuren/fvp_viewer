@@ -1,4 +1,6 @@
 #pragma once
+#include <spdlog/spdlog.h>
+
 #include <array>
 #include <fstream>
 #include <iostream>
@@ -11,11 +13,12 @@
 #include "GLDataManager.hpp"
 #include "main.hpp"
 #include "sensors/LRFSensor.hpp"
+#include "sensors/rplidar_lrf.hpp"
 #include "sensors/spincamera.hpp"
 #include "sensors/spinmanager.hpp"
+#include "sensors/urg_lrf.hpp"
 #include "utils/FpsDisplayer.hpp"
 #include "utils/SettingParameters.hpp"
-#include <spdlog/spdlog.h>
 
 // singleton SensorManager CLASS
 class SensorManager {
@@ -23,7 +26,7 @@ class SensorManager {
   // private constractor
   SensorManager(const std::shared_ptr<fvp::Config> &config) : cfg(config) {
     spdlog::info("initialize SensorManager : ");
-    manager = std::make_unique<SpinManager>();
+    manager = std::make_unique<sensor::SpinManager>();
     initialize();
     startCapture(false);
   }
@@ -42,16 +45,16 @@ class SensorManager {
   // setting parameters
   const std::shared_ptr<fvp::Config> cfg;
 
-  std::unique_ptr<SpinManager> manager;
+  std::unique_ptr<sensor::SpinManager> manager;
   std::shared_ptr<fvp::GLDataManager> gl_data_mgr;
 
   // thread
   std::vector<std::thread> ths;
-  std::vector<SpinCamPtr> cams;
+  std::vector<sensor::SpinCamPtr> cams;
   std::vector<cv::Mat> captured_imgs;
   std::vector<std::mutex *> img_mtxs;
-  std::unique_ptr<LRFSensor> LRF_sensor;
-  std::vector<LRFPoint> LRF_data;
+  std::shared_ptr<sensor::LRFSensor> LRF_sensor;
+  std::vector<sensor::LRFPoint> LRF_data;
 
   // -----------------------------------
   int initialize() {
@@ -66,33 +69,46 @@ class SensorManager {
       addCamera(image_sources[i], values);
     }
 
-    std::string str = cfg->LRF_com_port();
-    char *writable = new char[str.size() + 1];
-    std::copy(str.begin(), str.end(), writable);
-    writable[str.size()] = '\0';  // don't forget the terminating 0
-    char *argv[] = {"exe", "-s", writable};
-    LRF_sensor = std::make_unique<LRFSensor>(3, argv);
-    // don't forget to free the string after finished using it
-    delete[] writable;
+    const sensor::LRFSensorType lrf_type = sensor::RPLIDAR;
+    switch (lrf_type) {
+      case sensor::URG: {
+        std::string str = cfg->LRF_com_port();
+        char *writable = new char[str.size() + 1];
+        std::copy(str.begin(), str.end(), writable);
+        writable[str.size()] = '\0';  // don't forget the terminating 0
+        char *argv[] = {"exe", "-s", writable};
+        LRF_sensor = std::make_shared<sensor::UrgLRF>(3, argv);
+        // don't forget to free the string after finished using it
+        delete[] writable;
+      } break;
+      case sensor::RPLIDAR: {
+        std::string str = cfg->LRF_com_port();
+        LRF_sensor = std::make_shared<sensor::RplidarLRF>(str);
+      }
+      break;
+      default:
+        break;
+    }
+
     return 0;
   }
 
   //-----------------------------------------------------------------------------
   void addCamera(const std::string &image_source,
                  std::map<std::string, std::string> &values) {
-    SpinCamPtr cam;
+    sensor::SpinCamPtr cam;
 
     spdlog::info("Adding Spinnaker camera:{}", image_source);
     // Spinnaker Camera (serial number)
     if (image_source.size() == 8) {
       if (manager->serial2idx.find(image_source) != manager->serial2idx.end())
-        cam = std::make_shared<SpinCam>(manager->getCamera(image_source));
+        cam = std::make_shared<sensor::SpinCam>(manager->getCamera(image_source));
     }
     // Spinnaker Camera
     else {
       int camera_num = std::stoi(image_source);
       if (camera_num <= manager->size())
-        cam = std::make_shared<SpinCam>(manager->getCamera(camera_num));
+        cam = std::make_shared<sensor::SpinCam>(manager->getCamera(camera_num));
     }
     // set fps : Display freshrate
     if (values.find("framerate") != values.end()) {
@@ -103,7 +119,7 @@ class SensorManager {
     }
 
     if (!cam) {
-     spdlog::warn("Cannot find camera:{}", image_source);
+      spdlog::warn("Cannot find camera:{}", image_source);
     }
     cams.push_back(cam);
     captured_imgs.push_back(cv::Mat());
@@ -187,7 +203,7 @@ class SensorManager {
           std::lock_guard<std::mutex> lock(*img_mtxs[i]);
           cv::namedWindow(std::to_string(i), cv::WINDOW_NORMAL);
           cv::imshow(std::to_string(i), captured_imgs[i]);
-        } 
+        }
         int key = cv::waitKey(50);
         if (key == 27) threadExit();
       }

@@ -8,7 +8,7 @@
 
 namespace sensor {
 
-enum LRFSensorType { URG = 0, RPLIDAR };
+enum class LRFSensorType { URG = 0, RPLIDAR };
 
 struct LRFPoint {
   float x;

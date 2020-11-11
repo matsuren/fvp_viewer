@@ -39,6 +39,7 @@ RplidarLRF::RplidarLRF(const std::string &com_port) {
 
   // Start scan
   lidar->startMotor();
+  lidar->setMotorPWM(MAX_MOTOR_PWM);
   std::vector<RplidarScanMode> scanModes;
   lidar->getAllSupportedScanModes(scanModes);
 
@@ -87,7 +88,7 @@ int RplidarLRF::grab() {
 
       // If too short, then skip
       float distance_in_meters = nodes[pos].dist_mm_q2 / 1000.f / (1 << 2);
-      if (distance_in_meters < 0.1) continue;
+      if (distance_in_meters < 0.5) continue;
       float angle_in_degrees = nodes[pos].angle_z_q14 * 90.f / (1 << 14);
       float angle_in_rad = angle_in_degrees / 180.0 * M_PI;
 

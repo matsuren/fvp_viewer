@@ -240,7 +240,8 @@ class GLDataManager {
   int updateImgs(const cv::Mat &img, const int camera_id) {
     if (!is_initialized) return 0;
     std::lock_guard<std::mutex> lock(*mtxs[camera_id]);
-    capture_imgs[camera_id] = img.clone();
+    //capture_imgs[camera_id] = img.clone();
+    capture_imgs[camera_id] = img;
     imgs_update_required[camera_id] = true;
     return 0;
   }

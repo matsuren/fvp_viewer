@@ -56,6 +56,9 @@ class SensorManager {
   std::shared_ptr<sensor::LRFSensor> LRF_sensor;
   std::vector<sensor::LRFPoint> LRF_data;
 
+  // with viewer
+  bool with_viewer = false;
+
   // -----------------------------------
   int initialize() {
     //////////////////////////
@@ -69,25 +72,30 @@ class SensorManager {
       addCamera(image_sources[i], values);
     }
 
-    const sensor::LRFSensorType lrf_type = sensor::RPLIDAR;
-    switch (lrf_type) {
-      case sensor::URG: {
-        std::string str = cfg->LRF_com_port();
-        char *writable = new char[str.size() + 1];
-        std::copy(str.begin(), str.end(), writable);
-        writable[str.size()] = '\0';  // don't forget the terminating 0
-        char *argv[] = {"exe", "-s", writable};
-        LRF_sensor = std::make_shared<sensor::UrgLRF>(3, argv);
-        // don't forget to free the string after finished using it
-        delete[] writable;
-      } break;
-      case sensor::RPLIDAR: {
-        std::string str = cfg->LRF_com_port();
-        LRF_sensor = std::make_shared<sensor::RplidarLRF>(str);
+    // Add LRF
+    try {
+      const auto lrf_type = sensor::LRFSensorType::RPLIDAR;
+      //const auto lrf_type = sensor::LRFSensorType::URG;
+      switch (lrf_type) {
+        case sensor::LRFSensorType::URG: {
+          std::string str = cfg->LRF_com_port();
+          char *writable = new char[str.size() + 1];
+          std::copy(str.begin(), str.end(), writable);
+          writable[str.size()] = '\0';  // don't forget the terminating 0
+          char *argv[] = {"exe", "-s", writable};
+          LRF_sensor = std::make_shared<sensor::UrgLRF>(3, argv);
+          // don't forget to free the string after finished using it
+          delete[] writable;
+        } break;
+        case sensor::LRFSensorType::RPLIDAR: {
+          std::string str = cfg->LRF_com_port();
+          LRF_sensor = std::make_shared<sensor::RplidarLRF>(str);
+        } break;
+        default:
+          break;
       }
-      break;
-      default:
-        break;
+    } catch (...) {
+      spdlog::warn("No LRF sensor is detected.");
     }
 
     return 0;
@@ -102,7 +110,8 @@ class SensorManager {
     // Spinnaker Camera (serial number)
     if (image_source.size() == 8) {
       if (manager->serial2idx.find(image_source) != manager->serial2idx.end())
-        cam = std::make_shared<sensor::SpinCam>(manager->getCamera(image_source));
+        cam =
+            std::make_shared<sensor::SpinCam>(manager->getCamera(image_source));
     }
     // Spinnaker Camera
     else {
@@ -147,14 +156,15 @@ class SensorManager {
       ths.push_back(std::thread(&SensorManager::viewerWorker, this));
 
     // LRF
-    ths.push_back(std::thread(&SensorManager::LRFWorker, this, true));
+    if (LRF_sensor)
+      ths.push_back(std::thread(&SensorManager::LRFWorker, this, true));
   }
 
   //-----------------------------------------------------------------------------
   void captureWorker(int cam_id, bool enableFPS) {
     std::this_thread::sleep_for(std::chrono::milliseconds(1000));
     // get fps
-    FpsDisplayer fps_displayer("capture image " + std::to_string(cam_id), 160);
+    FpsDisplayer fps_displayer("Camera " + std::to_string(cam_id), 160);
     if (enableFPS) fps_displayer.start();
 
     std::vector<cv::Mat> capture_image;
@@ -192,6 +202,7 @@ class SensorManager {
 
   //-----------------------------------------------------------------------------
   void viewerWorker() {
+    with_viewer = true;
     std::this_thread::sleep_for(std::chrono::milliseconds(100));
     // get fps
     FpsDisplayer fps_displayer("viewer", 250);

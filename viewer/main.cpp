@@ -151,14 +151,14 @@ void error_callback(int error, const char *description) {
 #include "sensors/urg_lrf.hpp"
 
 int main(int argc, char *argv[]) {
-  const bool is_lrf_test = true;
+  const bool is_lrf_test = false;
   if (is_lrf_test) {
     spdlog::set_level(spdlog::level::trace);
     std::shared_ptr<sensor::LRFSensor> LRF_sensor;
 
-    const sensor::LRFSensorType lrf_type = sensor::RPLIDAR;
+    const sensor::LRFSensorType lrf_type = sensor::LRFSensorType::RPLIDAR;
     switch (lrf_type) {
-      case sensor::URG: {
+      case sensor::LRFSensorType::URG: {
         std::string str = "COM6";
         char *writable = new char[str.size() + 1];
         std::copy(str.begin(), str.end(), writable);
@@ -168,7 +168,7 @@ int main(int argc, char *argv[]) {
         // don't forget to free the string after finished using it
         delete[] writable;
       } break;
-      case sensor::RPLIDAR: {
+      case sensor::LRFSensorType::RPLIDAR: {
         std::string str = "com5";
         LRF_sensor = std::make_shared<sensor::RplidarLRF>(str);
       } break;

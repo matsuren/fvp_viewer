@@ -149,6 +149,7 @@ void error_callback(int error, const char *description) {
 
 #include "sensors/rplidar_lrf.hpp"
 #include "sensors/urg_lrf.hpp"
+#include "sensors/file_lrf.hpp"
 
 int main(int argc, char *argv[]) {
   const bool is_lrf_test = false;
@@ -156,8 +157,12 @@ int main(int argc, char *argv[]) {
     spdlog::set_level(spdlog::level::trace);
     std::shared_ptr<sensor::LRFSensor> LRF_sensor;
 
-    const sensor::LRFSensorType lrf_type = sensor::LRFSensorType::RPLIDAR;
+    const sensor::LRFSensorType lrf_type = sensor::LRFSensorType::FILE;
     switch (lrf_type) {
+      case sensor::LRFSensorType::FILE: {
+        std::string str = "rp_xy_";
+        LRF_sensor = std::make_shared<sensor::FileLRF>(str);
+      } break;
       case sensor::LRFSensorType::URG: {
         std::string str = "COM6";
         char *writable = new char[str.size() + 1];
@@ -175,14 +180,14 @@ int main(int argc, char *argv[]) {
       default:
         break;
     }
-    // for (size_t i = 0; i < 20; i++) {
+    // for (size_t i = 0; i < 60; i++) {
     //  LRF_sensor->grab();
     //  std::vector<sensor::LRFPoint> tmp;
     //  LRF_sensor->retrieve(tmp);
     //  std::string key_name;
-    //  if (lrf_type == sensor::URG)
+    //  if (lrf_type == sensor::LRFSensorType::URG)
     //    key_name = "urg";
-    //  else if (lrf_type == sensor::RPLIDAR)
+    //  else if (lrf_type == sensor::LRFSensorType::RPLIDAR)
     //    key_name = "rp";
     //  std::string filename = key_name + "_xy_" + std::to_string(i) + ".csv";
     //  std::ofstream ofs(filename);
@@ -192,7 +197,10 @@ int main(int argc, char *argv[]) {
     //}
 
     while (true) {
-      LRF_sensor->grab();
+      if (!LRF_sensor->grab()) {
+        spdlog::error("Cannot grab from LRF");
+        break;
+      }
       std::vector<sensor::LRFPoint> tmp;
       LRF_sensor->retrieve(tmp);
       cv::Mat vis;

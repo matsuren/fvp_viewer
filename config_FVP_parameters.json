@@ -3,7 +3,7 @@
         "calib_folder": "../../data",
         "record_folder": "../../raw_data",
         "image_sources": [
-            "17550648",
+            "15637060",
             "15637085",
             "16025863",
             "16025862"
@@ -14,8 +14,8 @@
         "robot_model_file": "robot.ply",
         "robot_align_yml": "robot_align_matrix.yml",
         "capture_framerate": 20,
-        "LRF_com_port": "COM5",
+        "LRF_com_port": "rp_xy_",
         "lrf_align_yml": "lrf_align_matrix.yml",
-        "sample_lrf_file": "urg_xy.csv"
+        "sample_lrf_file": "rp_xy_34.csv"
     }
 }

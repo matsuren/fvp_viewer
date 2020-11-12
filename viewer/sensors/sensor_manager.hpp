@@ -17,6 +17,7 @@
 #include "sensors/spincamera.hpp"
 #include "sensors/spinmanager.hpp"
 #include "sensors/urg_lrf.hpp"
+#include "sensors/file_lrf.hpp"
 #include "utils/FpsDisplayer.hpp"
 #include "utils/SettingParameters.hpp"
 
@@ -74,9 +75,14 @@ class SensorManager {
 
     // Add LRF
     try {
-      const auto lrf_type = sensor::LRFSensorType::RPLIDAR;
+      const auto lrf_type = sensor::LRFSensorType::FILE;
+      //const auto lrf_type = sensor::LRFSensorType::RPLIDAR;
       //const auto lrf_type = sensor::LRFSensorType::URG;
       switch (lrf_type) {
+        case sensor::LRFSensorType::FILE: {
+          std::string str = cfg->LRF_com_port();  //"rp_xy_";
+          LRF_sensor = std::make_shared<sensor::FileLRF>(str);
+        } break;
         case sensor::LRFSensorType::URG: {
           std::string str = cfg->LRF_com_port();
           char *writable = new char[str.size() + 1];

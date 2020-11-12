@@ -36,15 +36,12 @@ bool FileLRF::retrieve(std::vector<LRFPoint> &LRF_data) {
   // read from csv file
   LRF_data.clear();
   std::string tmp_str;
-  int debug_cnt = 0;
   while (std::getline(ifs_lrf, tmp_str)) {
     std::vector<std::string> ret_str = LRFSensor::split(tmp_str, ",");
     LRFPoint tmp_pair(std::stof(ret_str[0]), std::stof(ret_str[1]));
     LRF_data.push_back(tmp_pair);
-    if (++debug_cnt == 250) break;
   }
-  spdlog::info("LRF_data: len {}", LRF_data.size());
-  std::this_thread::sleep_for(std::chrono::milliseconds(500));
+  std::this_thread::sleep_for(std::chrono::milliseconds(50));
   return true;
 }
 }  // namespace sensor

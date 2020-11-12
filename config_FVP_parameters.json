@@ -14,8 +14,8 @@
         "robot_model_file": "robot.ply",
         "robot_align_yml": "robot_align_matrix.yml",
         "capture_framerate": 20,
-        "LRF_com_port": "rp_xy_",
+        "LRF_com_port": "com3",
         "lrf_align_yml": "lrf_align_matrix.yml",
-        "sample_lrf_file": "rp_xy_34.csv"
+        "sample_lrf_file": "urg_xy.csv"
     }
 }

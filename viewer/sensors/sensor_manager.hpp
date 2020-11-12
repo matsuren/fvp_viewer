@@ -75,8 +75,8 @@ class SensorManager {
 
     // Add LRF
     try {
-      const auto lrf_type = sensor::LRFSensorType::FILE;
-      //const auto lrf_type = sensor::LRFSensorType::RPLIDAR;
+      //const auto lrf_type = sensor::LRFSensorType::FILE;
+      const auto lrf_type = sensor::LRFSensorType::RPLIDAR;
       //const auto lrf_type = sensor::LRFSensorType::URG;
       switch (lrf_type) {
         case sensor::LRFSensorType::FILE: {

@@ -37,8 +37,9 @@ SpinCam::SpinCam(CameraPtr pCam_) {
     spdlog::info("Device model:{}", model);
     spdlog::info("Serial number:{}", serial);
     if (model == "Grasshopper3 GS3-U3-41C6C") {
-       spdlog::info("Set ROI since Model is {}", model);
+       //spdlog::info("Set ROI since Model is {}", model);
        setROI(224, 224, 1600, 1600);
+       //setROI(0, 0, 2048, 2048);
     }
 
     // White balance

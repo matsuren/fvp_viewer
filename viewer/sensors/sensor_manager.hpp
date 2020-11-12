@@ -13,11 +13,11 @@
 #include "GLDataManager.hpp"
 #include "main.hpp"
 #include "sensors/LRFSensor.hpp"
+#include "sensors/file_lrf.hpp"
 #include "sensors/rplidar_lrf.hpp"
 #include "sensors/spincamera.hpp"
 #include "sensors/spinmanager.hpp"
 #include "sensors/urg_lrf.hpp"
-#include "sensors/file_lrf.hpp"
 #include "utils/FpsDisplayer.hpp"
 #include "utils/SettingParameters.hpp"
 
@@ -75,9 +75,9 @@ class SensorManager {
 
     // Add LRF
     try {
-      //const auto lrf_type = sensor::LRFSensorType::FILE;
+      // const auto lrf_type = sensor::LRFSensorType::FILE;
       const auto lrf_type = sensor::LRFSensorType::RPLIDAR;
-      //const auto lrf_type = sensor::LRFSensorType::URG;
+      // const auto lrf_type = sensor::LRFSensorType::URG;
       switch (lrf_type) {
         case sensor::LRFSensorType::FILE: {
           std::string str = cfg->LRF_com_port();  //"rp_xy_";
@@ -168,12 +168,20 @@ class SensorManager {
 
   //-----------------------------------------------------------------------------
   void captureWorker(int cam_id, bool enableFPS) {
-    std::this_thread::sleep_for(std::chrono::milliseconds(1000));
+    std::this_thread::sleep_for(std::chrono::milliseconds(200));
     // get fps
     FpsDisplayer fps_displayer("Camera " + std::to_string(cam_id), 160);
     if (enableFPS) fps_displayer.start();
-
-    std::vector<cv::Mat> capture_image;
+    {
+      // save initial image for calibration
+      cv::Mat tmp;
+      if (cams[cam_id]->read(tmp, false)) {
+        {
+          cv::cvtColor(tmp, tmp, cv::COLOR_BayerGR2BGR);
+          cv::imwrite("img" + std::to_string(cam_id) + ".jpg", tmp);
+        }
+      }
+    }
 
     try {
       // loop
@@ -230,10 +238,21 @@ class SensorManager {
   }
   //-----------------------------------------------------------------------------
   void LRFWorker(bool enableFPS) {
-    std::this_thread::sleep_for(std::chrono::milliseconds(1000));
+    std::this_thread::sleep_for(std::chrono::milliseconds(200));
     // get fps
     FpsDisplayer fps_displayer("LRF data ", 160);
     if (enableFPS) fps_displayer.start();
+
+    {
+      // save initial scan for calibration
+      if (LRF_sensor->grab()) {
+        LRF_sensor->retrieve(LRF_data);
+        std::ofstream ofs("urg_xy.csv");
+        for (const auto &it : LRF_data) {
+          ofs << it.x << ", " << it.y << std::endl;
+        }
+      }
+    }
 
     // loop
     while (!checkExit()) {

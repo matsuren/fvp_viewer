@@ -30,13 +30,11 @@ class GLDataManager {
   bool is_initialized;
 
   GLDataManager(const std::shared_ptr<Config> &config)
-      : cfg(config), is_initialized(false) {}
+      : cfg(config), is_initialized(false), CAMERA_NUM(cfg->num_camera()) {
+  }
 
   // -----------------------------------
   int initializeFisheye(GLSLProgram &prog) {
-    const int CAMERA_NUM = int(cfg->num_camera());
-    prog.setUniform("CAMERA_NUM", CAMERA_NUM);
-
     // Load texture file to texture array
     glActiveTexture(GL_TEXTURE0);
     glGenTextures(1, &texID);
@@ -59,7 +57,6 @@ class GLDataManager {
       }
       capture_imgs.push_back(tmp);
       img_pixel_buffers.push_back(0);
-      fisheye_views.push_back(cv::Mat::eye(4, 4, CV_32FC1));
       imgs_update_required.push_back(false);
       mtxs.push_back(new std::mutex());
     }
@@ -92,61 +89,6 @@ class GLDataManager {
                       GL_BGR, GL_UNSIGNED_BYTE, nullptr);
 
       imgs_update_required[i] = false;
-    }
-
-    // for OCamCalib
-    for (int i = 0; i < CAMERA_NUM; i++) {
-      /* --------------------------------------------------------------------*/
-      /* Read the parameters of the omnidirectional camera from the TXT file */
-      /* --------------------------------------------------------------------*/
-      struct ocam_model o;
-
-      std::string ocam_fname = cfg->calib_filenames(i);
-      spdlog::info("Loading calib file: {}", ocam_fname);
-      if (get_ocam_model(&o, ocam_fname.c_str()) == -1) {
-        spdlog::error("Cannot load calib file:{}", ocam_fname);
-        throw std::runtime_error("No calib file");
-      }
-
-      /* --------------------------------------------------------------------*/
-      /* Print ocam_model parameters                                         */
-      /* --------------------------------------------------------------------*/
-      const std::string ocamparam_name =
-          "OCamParams[" + std::to_string(i) + "]";
-      const int INVPOL_MAX = 14;
-      const int POL_MAX = 6;
-      while (o.length_invpol < INVPOL_MAX) {
-        o.invpol[o.length_invpol] = 0;
-        o.length_invpol++;
-      }
-      while (o.length_pol < POL_MAX) {
-        o.pol[o.length_pol] = 0;
-        o.length_pol++;
-      }
-
-      spdlog::debug("pol =");
-      for (int i = 0; i < o.length_pol; i++) {
-        spdlog::debug("\t{:.4e}", o.pol[i]);
-      };
-      spdlog::debug("invpol =");
-      for (int i = 0; i < o.length_invpol; i++) {
-        spdlog::debug("\t{:.4e}", o.invpol[i]);
-      };
-      spdlog::debug("xc={}, yc={}, width={}, height={}", o.xc, o.yc, o.width,
-                    o.height);
-      prog.setUniform(ocamparam_name + ".xc", o.xc);
-      prog.setUniform(ocamparam_name + ".yc", o.yc);
-      prog.setUniform(ocamparam_name + ".c", o.c);
-      prog.setUniform(ocamparam_name + ".d", o.d);
-      prog.setUniform(ocamparam_name + ".e", o.e);
-      prog.setUniform(ocamparam_name + ".width", float(o.width));
-      prog.setUniform(ocamparam_name + ".height", float(o.height));
-      // set array
-      prog.setUniform(ocamparam_name + ".invpol", o.invpol, INVPOL_MAX);
-      prog.setUniform(ocamparam_name + ".pol", o.pol, POL_MAX);
-
-      // set fov
-      // prog.setUniform(ocamparam_name + ".fov", M_PI);
     }
 
     is_initialized = true;
@@ -186,32 +128,6 @@ class GLDataManager {
     return 0;
   }
 
-  // -----------------------------------
-  // get camera image
-  int getCameraNumber() { return static_cast<int>(capture_imgs.size()); }
-  // -----------------------------------
-  // transposed (the source array is stored column-wise)
-  int getCameraViewMatrix(cv::Mat &ret_mat, const int camera_id) {
-    if (static_cast<size_t>(camera_id) < fisheye_views.size()) {
-      cv::transpose(fisheye_views[camera_id], ret_mat);
-      return 0;
-    } else {
-      spdlog::error("Arg (camera_id) exceeded number of fisheye_views.");
-      spdlog::error("camera_id:{} > {}", camera_id, fisheye_views.size());
-      throw std::invalid_argument("camera_id is larger than number of imgs");
-    }
-  }
-  // -----------------------------------
-  int setCameraViewMatrix(const cv::Mat &Rt, const int camera_id) {
-    if (static_cast<size_t>(camera_id) < fisheye_views.size()) {
-      Rt.convertTo(fisheye_views[camera_id], CV_32F);
-    } else {
-      spdlog::error("Arg (camera_id) exceeded number of fisheye_views.");
-      spdlog::error("camera_id:{} > {}", camera_id, fisheye_views.size());
-      throw std::invalid_argument("camera_id is larger than number of imgs");
-    }
-    return 0;
-  }
   // -----------------------------------
 
   int updateImgs(const cv::Mat &img, const int camera_id) {
@@ -313,15 +229,11 @@ class GLDataManager {
     }
   }
 
- public:
-  // setting parameters
-  fvp::Config *cfg_;
-
  private:
+  const int CAMERA_NUM;
   // camera image
   std::vector<cv::Mat> capture_imgs;
   std::vector<GLuint> img_pixel_buffers;
-  std::vector<cv::Mat> fisheye_views;
   std::vector<bool> imgs_update_required;
   std::vector<std::mutex *> mtxs;
 

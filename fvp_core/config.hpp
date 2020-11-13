@@ -6,6 +6,7 @@
 #include <cereal/types/vector.hpp>
 #include <fstream>
 #include <iostream>
+#include <opencv2/calib3d/calib3d.hpp>
 #include <string>
 
 namespace fvp {
@@ -79,37 +80,37 @@ class Config {
     i_archive(data);
   }
 
-  std::string cam_pose_filename() {
+  const std::string cam_pose_filename() {
     return data.calib_folder + "/" + data.camera_pose_yml;
   }
-  std::string image_filenames(int i) {
+  const std::string image_filenames(int i) {
     // copy
     std::string s = data.sample_image_files;
     // replace
     s.replace(s.find("*"), 1, std::to_string(i));
     return data.calib_folder + "/" + s;
   }
-  std::string calib_filenames(int i) {
+  const std::string calib_filenames(int i) {
     // copy
     std::string s = data.ocamcalib_files;
     // replace
     s.replace(s.find("*"), 1, std::to_string(i));
     return data.calib_folder + "/" + s;
   }
-  std::string robot_model_filename() {
+  const std::string robot_model_filename() {
     return data.calib_folder + "/" + data.robot_model_file;
   }
 
-  std::string lrf_data_filename() {
+  const std::string lrf_data_filename() {
     return data.calib_folder + "/" + data.sample_lrf_file;
   }
 
-  std::string LRF_com_port() { return data.LRF_com_port; }
+  const std::string LRF_com_port() { return data.LRF_com_port; }
 
-  std::string record_folder() { return data.record_folder; }
-  size_t num_camera() { return data.image_sources.size(); }
-  std::vector<std::string> image_sources() { return data.image_sources; }
-  int capture_framerate() { return data.capture_framerate; }
+  const std::string record_folder() { return data.record_folder; }
+  const int num_camera() { return int(data.image_sources.size()); }
+  const std::vector<std::string> image_sources() { return data.image_sources; }
+  const int capture_framerate() { return data.capture_framerate; }
 
   void getRobotPose(cv::Mat &trans_matrix) {
     const auto fs = cv::FileStorage(

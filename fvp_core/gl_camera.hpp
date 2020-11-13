@@ -23,7 +23,7 @@ class GLCameraManager {
         rotSpeed(glm::pi<float>() / 20.0f),
         isAnimation(false),
         phi_min(0.0f),
-        phi_max(M_PI / 2.0f - 0.00001f) {
+        phi_max(float(M_PI / 2.0f - 0.00001f)) {
     spdlog::info("initialize GLCameraManager : ");
   };
   ~GLCameraManager() = default;
@@ -105,7 +105,7 @@ class GLCameraManager {
   }
 
   // light position
-  void setWorldLightPosition(vec4 &light_position) {
+  void setWorldLightPosition(const vec4 &light_position) {
     world_light = light_position;
   }
   vec4 getWorldLightPosition() const { return world_light; }

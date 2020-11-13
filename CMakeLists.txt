@@ -8,6 +8,9 @@ message(Project Id : ${ProjectId})
 project (${ProjectId})
 include_directories(${CMAKE_SOURCE_DIR})
 message(------project name : ${ProjectId} ---------)
+# Add warning level if you want
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}")
+set(CMAKE_CXX_STANDARD 14)
 
 ######################################################################
 # Options

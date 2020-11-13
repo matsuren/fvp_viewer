@@ -23,7 +23,7 @@ class System {
  private:
   const std::shared_ptr<Config> cfg;
   std::shared_ptr<GLDataManager> gl_data_mgr;
-  std::unique_ptr<GLModelManager> gl_model_mgr;
+  std::unique_ptr<GLModelManager> model_mgr;
   int win_width;
   int win_height;
   int img_width;
@@ -34,13 +34,14 @@ class System {
 
   mat4 ModelMatrix;
   mat4 ViewMatrix;
-  std::array<mat4, 4> fisheye_views;
+  std::array<mat4, 4> FisheyeViews;
   std::array<cv::Mat, 4> fisheye_views_cvmat;
   mat4 ProjMatrix;
 
   void setMatrices();
   void setMatricesPassthrough();
   void compileAndLinkShader();
+  void setCameraCalibData(const std::string fname, const int cam_id);
 
  public:
   System(const std::shared_ptr<Config> &config);
@@ -56,11 +57,12 @@ class System {
   void setRenderMode(const int int_mode);
   void setRenderMode(const RenderMode mode);
 
-  void animate(bool value) { m_animate = value; }
-  bool animating() { return m_animate; }
+  void animate(bool value) { is_animating = value; }
+  bool animating() { return is_animating; }
 
  protected:
-  bool m_animate;
+  bool is_animating;
   RenderMode render_mode;
+  const int CAMERA_NUM;
 };
 }  // namespace fvp

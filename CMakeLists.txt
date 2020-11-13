@@ -121,6 +121,13 @@ if(rplidar)
 endif(rplidar)
 list( APPEND PROJ_LIBS ${rplidar_LIBS} )
 
+
+# ##############################################################################
+# thirdparty header only libraries
+include_directories(${CMAKE_SOURCE_DIR}/thirdparty/glm)
+include_directories(${CMAKE_SOURCE_DIR}/thirdparty/cereal/include)
+
+
 ######################################################################
 # Recurse into the subdirectories. 
 add_subdirectory( viewer )

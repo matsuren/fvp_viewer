@@ -11,10 +11,9 @@
 #include <opencv2/imgproc.hpp>
 
 #include "LRFSensor.hpp"
+#include "config.hpp"
 #include "glslprogram.h"
 #include "ocam_functions.hpp"
-#include "utils/FpsDisplayer.hpp"
-#include "utils/SettingParameters.hpp"
 
 namespace fvp {
 class GLDataManager {
@@ -83,7 +82,8 @@ class GLDataManager {
       // exits.
       GLuint pixel_buffer;
       glGenBuffers(1, &pixel_buffer);
-      setPixelbuffer(pixel_buffer, i);
+      // setPixelbuffer
+      img_pixel_buffers[i] = pixel_buffer;
       glBindBuffer(GL_PIXEL_UNPACK_BUFFER, pixel_buffer);
       glBufferData(GL_PIXEL_UNPACK_BUFFER, 3 * img_width * img_height,
                    mat_data.data, GL_DYNAMIC_DRAW);
@@ -190,29 +190,6 @@ class GLDataManager {
   // get camera image
   int getCameraNumber() { return static_cast<int>(capture_imgs.size()); }
   // -----------------------------------
-  // get camera image
-  int setPixelbuffer(const GLuint pixel_buffer, const int camera_id) {
-    if (static_cast<size_t>(camera_id) < capture_imgs.size()) {
-      img_pixel_buffers[camera_id] = pixel_buffer;
-      return 0;
-    } else {
-      spdlog::error("Arg (camera_id) exceeded number of capture_imgs.");
-      spdlog::error("camera_id:{} > {}", camera_id, capture_imgs.size());
-      throw std::invalid_argument("camera_id is larger than number of imgs");
-    }
-  }
-  // -----------------------------------
-  // get camera image
-  GLuint getPixelbuffer(const int camera_id) {
-    if (static_cast<size_t>(camera_id) < capture_imgs.size()) {
-      return img_pixel_buffers[camera_id];
-    } else {
-      spdlog::error("Arg (camera_id) exceeded number of capture_imgs.");
-      spdlog::error("camera_id:{} > {}", camera_id, capture_imgs.size());
-      throw std::invalid_argument("camera_id is larger than number of imgs");
-    }
-  }
-  // -----------------------------------
   // transposed (the source array is stored column-wise)
   int getCameraViewMatrix(cv::Mat &ret_mat, const int camera_id) {
     if (static_cast<size_t>(camera_id) < fisheye_views.size()) {
@@ -240,7 +217,7 @@ class GLDataManager {
   int updateImgs(const cv::Mat &img, const int camera_id) {
     if (!is_initialized) return 0;
     std::lock_guard<std::mutex> lock(*mtxs[camera_id]);
-    //capture_imgs[camera_id] = img.clone();
+    // capture_imgs[camera_id] = img.clone();
     capture_imgs[camera_id] = img;
     imgs_update_required[camera_id] = true;
     return 0;

@@ -17,6 +17,8 @@ class Config;
 class GLDataManager;
 class GLModelManager;
 
+enum class RenderMode { FLOOR = 1, DOME, LRF};
+
 class System {
  private:
   const std::shared_ptr<Config> cfg;
@@ -29,12 +31,6 @@ class System {
 
   GLSLProgram prog;
   GLSLProgram prog_robot;
-
-  model::Plane *plane_floor;
-  model::Plane *plane_wall;
-  model::Plane *plane_wall2;
-  model::Drawable *dome;
-  model::Mesh *assimp_robot;
 
   mat4 ModelMatrix;
   mat4 ViewMatrix;
@@ -57,11 +53,14 @@ class System {
   void render();
   void resize(int, int);
   void getwinsize(int &w, int &h);
+  void setRenderMode(const int int_mode);
+  void setRenderMode(const RenderMode mode);
 
   void animate(bool value) { m_animate = value; }
   bool animating() { return m_animate; }
 
  protected:
   bool m_animate;
+  RenderMode render_mode;
 };
 }  // namespace fvp

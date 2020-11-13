@@ -7,9 +7,9 @@
 #include <cstdlib>
 #include <memory>
 
-#include "GLCameraManager.hpp"
-#include "GLDataManager.hpp"
-#include "SettingParameters.hpp"
+#include "gl_camera.hpp"
+#include "gl_data_manager.hpp"
+#include "config.hpp"
 #include "fvp_system.hpp"
 #include "glutils.h"
 #include "sensors/sensor_manager.hpp"
@@ -33,8 +33,6 @@ string title;
 std::atomic<bool> exit_flag(false);
 bool checkExit() { return exit_flag; }
 void threadExit() { exit_flag = true; }
-// render mode 1:floor 2:dome 3:LRF
-int RENDER_MODE = 3;
 
 //-----------------------------------------------------------------------------
 static void key_callback(GLFWwindow *window, int key, int scancode, int action,
@@ -43,7 +41,7 @@ static void key_callback(GLFWwindow *window, int key, int scancode, int action,
   if (key == GLFW_KEY_SPACE && action == GLFW_RELEASE)
     fvp_system->animate(!(fvp_system->animating()));
   if (key >= GLFW_KEY_1 && key <= GLFW_KEY_4 && action == GLFW_PRESS)
-    RENDER_MODE = key - GLFW_KEY_0;
+	  fvp_system->setRenderMode(key - GLFW_KEY_0);
   if (key == GLFW_KEY_RIGHT && action == GLFW_RELEASE)
     GLCameraManager::getInstance().angle += 0.01f;
   if (key == GLFW_KEY_LEFT && action == GLFW_RELEASE)
@@ -140,80 +138,12 @@ void mainLoop() {
 /** @brief It displays if an error is raised by the glfw
  */
 void error_callback(int error, const char *description) {
-  fprintf(stderr, "Error: %s\n", description);
+  spdlog::error("GLFW Error: {}", description);
 }
 //-----------------------------------------------------------------------------
 
-#include <opencv2/core/core.hpp>
-#include <opencv2/highgui/highgui.hpp>
-
-#include "sensors/rplidar_lrf.hpp"
-#include "sensors/urg_lrf.hpp"
-#include "sensors/file_lrf.hpp"
 
 int main(int argc, char *argv[]) {
-  const bool is_lrf_test = false;
-  if (is_lrf_test) {
-    spdlog::set_level(spdlog::level::trace);
-    std::shared_ptr<sensor::LRFSensor> LRF_sensor;
-
-    const sensor::LRFSensorType lrf_type = sensor::LRFSensorType::FILE;
-    switch (lrf_type) {
-      case sensor::LRFSensorType::FILE: {
-        std::string str = "rp_xy_";
-        LRF_sensor = std::make_shared<sensor::FileLRF>(str);
-      } break;
-      case sensor::LRFSensorType::URG: {
-        std::string str = "COM6";
-        char *writable = new char[str.size() + 1];
-        std::copy(str.begin(), str.end(), writable);
-        writable[str.size()] = '\0';  // don't forget the terminating 0
-        char *argv[] = {"exe", "-s", writable};
-        LRF_sensor = std::make_shared<sensor::UrgLRF>(3, argv);
-        // don't forget to free the string after finished using it
-        delete[] writable;
-      } break;
-      case sensor::LRFSensorType::RPLIDAR: {
-        std::string str = "com5";
-        LRF_sensor = std::make_shared<sensor::RplidarLRF>(str);
-      } break;
-      default:
-        break;
-    }
-    // for (size_t i = 0; i < 60; i++) {
-    //  LRF_sensor->grab();
-    //  std::vector<sensor::LRFPoint> tmp;
-    //  LRF_sensor->retrieve(tmp);
-    //  std::string key_name;
-    //  if (lrf_type == sensor::LRFSensorType::URG)
-    //    key_name = "urg";
-    //  else if (lrf_type == sensor::LRFSensorType::RPLIDAR)
-    //    key_name = "rp";
-    //  std::string filename = key_name + "_xy_" + std::to_string(i) + ".csv";
-    //  std::ofstream ofs(filename);
-    //  for (const auto &it : tmp) {
-    //    ofs << it.x << ", " << it.y << std::endl;
-    //  }
-    //}
-
-    while (true) {
-      if (!LRF_sensor->grab()) {
-        spdlog::error("Cannot grab from LRF");
-        break;
-      }
-      std::vector<sensor::LRFPoint> tmp;
-      LRF_sensor->retrieve(tmp);
-      cv::Mat vis;
-      sensor::LRFSensor::drawPoints(tmp, vis);
-      cv::imshow("vis", vis);
-      int key = cv::waitKey(10);
-      if (key == 27) {
-        break;
-      }
-    }
-    return 0;
-  }
-
   std::cout << "+++++++++++++++++++++++++++++++++++++++" << std::endl;
   std::cout << "+++ Free viewpoint image generation +++" << std::endl;
   std::cout << "+++++++++++++++++++++++++++++++++++++++" << std::endl;

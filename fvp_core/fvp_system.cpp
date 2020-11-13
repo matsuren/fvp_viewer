@@ -5,8 +5,8 @@
 #include <cstdlib>
 #include <iostream>
 
-#include "GLDataManager.hpp"
-#include "SettingParameters.hpp"
+#include "gl_data_manager.hpp"
+#include "config.hpp"
 #include "glutils.h"
 #include "main.hpp"
 
@@ -17,13 +17,13 @@ using glm::vec3;
 #include <glm/gtx/string_cast.hpp>
 #include <glm/gtx/transform.hpp>
 
-#include "GLCameraManager.hpp"
-#include "GLModelManager.hpp"
+#include "gl_camera.hpp"
+#include "gl_model_manager.hpp"
 #include "models/dome.hpp"
 
 namespace fvp {
 System::System(const std::shared_ptr<Config> &config)
-    : cfg(config), m_animate(false) {
+    : cfg(config), m_animate(false), render_mode(RenderMode::LRF){
   gl_model_mgr = std::make_unique<GLModelManager>();
 }
 //-----------------------------------------------------------------------------
@@ -34,20 +34,16 @@ void System::initScene() {
   glEnable(GL_DEPTH_TEST);
 
   const std::string robot_model_file = cfg->robot_model_filename();
-  spdlog::info("Loading: {}", robot_model_file); 
-  assimp_robot = new model::Mesh(robot_model_file);
-  assimp_robot->setProgram(&prog_robot);
-  gl_model_mgr->setDrawableModel("robot", assimp_robot);
+  spdlog::info("Loading: {}", robot_model_file);
+  gl_model_mgr->setDrawableModel("robot", std::make_shared<model::Mesh>(robot_model_file, &prog_robot));
 
   ////////////////////////////////
   // Load GL model
   ////////////////////////////////
-  dome = new model::Dome(2.0f, 50);
-  gl_model_mgr->setDrawableModel("dome", dome);
+  gl_model_mgr->setDrawableModel("dome", std::make_shared<model::Dome>(2.0f, 50));
 
   float plane_size = 10.0f;
-  plane_floor = new model::Plane(plane_size, plane_size, 1, 1);
-  gl_model_mgr->setDrawableModel("floor", plane_floor);
+  gl_model_mgr->setDrawableModel("floor", std::make_shared<model::Plane>(plane_size, plane_size, 1, 1));
 
   ////////////////////////////////
   // Load model matrix
@@ -107,7 +103,7 @@ void System::initScene() {
       spdlog::debug(glm::to_string(fisheye_views[i][j]));
     }
   }
-  
+
   // Debug glsl
   if (SPDLOG_LEVEL_DEBUG >= spdlog::get_level()) {
     prog.printActiveAttribs();
@@ -142,18 +138,23 @@ void System::render() {
 
   prog.use();
 
-  if (RENDER_MODE == 1) {
-    ModelMatrix = gl_model_mgr->getModelMatrix("floor");
-    setMatrices();
-    gl_model_mgr->drawModel("floor");
-  } else if (RENDER_MODE == 2) {
-    ModelMatrix = gl_model_mgr->getModelMatrix("dome");
-    setMatrices();
-    gl_model_mgr->drawModel("dome");
-  } else if (RENDER_MODE == 3) {
-    ModelMatrix = gl_model_mgr->getModelMatrix("LRF");
-    setMatrices();
-    gl_data_mgr->drawModel("LRF");
+  switch (render_mode)
+  {
+  case fvp::RenderMode::FLOOR:
+	  ModelMatrix = gl_model_mgr->getModelMatrix("floor");
+	  setMatrices();
+	  gl_model_mgr->drawModel("floor");
+	  break;
+  case fvp::RenderMode::DOME:
+	  ModelMatrix = gl_model_mgr->getModelMatrix("dome");
+	  setMatrices();
+	  gl_model_mgr->drawModel("dome");
+	  break;
+  case fvp::RenderMode::LRF:
+	  ModelMatrix = gl_model_mgr->getModelMatrix("LRF");
+	  setMatrices();
+	  gl_data_mgr->drawModel("LRF");
+	  break;
   }
 
   prog_robot.use();
@@ -202,6 +203,19 @@ void System::getwinsize(int &w, int &h) {
   h = win_height;
 }
 //-----------------------------------------------------------------------------
+void System::setRenderMode(const int int_mode) {
+	if (0 < int_mode && int_mode < 4) {
+		setRenderMode(static_cast<fvp::RenderMode>(int_mode));
+	}
+	else {
+		spdlog::warn("Invalid render mode:{}", int_mode);
+	}
+}
+//-----------------------------------------------------------------------------
+void System::setRenderMode(const RenderMode mode) {
+	render_mode = mode;
+}
+//-----------------------------------------------------------------------------
 void System::compileAndLinkShader() {
   spdlog::info("Compile and link shader");
   try {
@@ -211,7 +225,8 @@ void System::compileAndLinkShader() {
     prog.link();
     prog.use();
 
-    spdlog::info("../../shader/simpleAssimpShader.vert and simpleAssimpShader.frag");
+    spdlog::info(
+        "../../shader/simpleAssimpShader.vert and simpleAssimpShader.frag");
     prog_robot.compileShader("../../shader/simpleAssimpShader.vert");
     prog_robot.compileShader("../../shader/simpleAssimpShader.frag");
     prog_robot.link();

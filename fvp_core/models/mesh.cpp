@@ -297,7 +297,7 @@ namespace model {
 	/**
 	*	Mesh constructor, loads the specified filename if supported by Assimp
 	**/
-	Mesh::Mesh(const std::string &filename)
+	Mesh::Mesh(const std::string &filename, GLSLProgram* prog): _prog(prog)
 	{
 		createAILogger();
 
@@ -338,21 +338,21 @@ namespace model {
 	*	Renders all loaded MeshEntries
 	**/
 	void Mesh::render() const {
-		if (tmp_prog == nullptr) {
+		if (_prog == nullptr) {
 			std::cout
 				<< "/**--------------------\n"
 				<< "error! please set Program before rendering!\n"
 				<< "--------------------**/\n";
 		}
 		for (size_t i = 0; i < meshEntries.size(); ++i) {
-			meshEntries[i].render(tmp_prog);
+			meshEntries[i].render(_prog);
 		}
 	}
 	/**
 	*	Set program to use setUniform
 	**/
 	void Mesh::setProgram(GLSLProgram *prog) {
-		tmp_prog = prog;
+		_prog = prog;
 	}
 	/**
 	*	get basepath

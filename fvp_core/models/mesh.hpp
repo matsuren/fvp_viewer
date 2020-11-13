@@ -55,12 +55,12 @@ namespace model {
 		void destroyAILogger();
 
 	public:
-		Mesh(const std::string &filename);
+		Mesh(const std::string &filename, GLSLProgram* prog);
 		~Mesh(void);
-		GLSLProgram *tmp_prog = nullptr; // setUniform
+		GLSLProgram *_prog; // Default program
 
 		void render() const;
-		void setProgram(GLSLProgram *prog);
+		void setProgram(GLSLProgram* prog);
 		float scale = 1.0f;
 
 	private:

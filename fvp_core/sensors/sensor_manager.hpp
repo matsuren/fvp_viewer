@@ -10,7 +10,7 @@
 #include <opencv2/imgcodecs.hpp>
 #include <opencv2/imgproc.hpp>
 
-#include "GLDataManager.hpp"
+#include "gl_data_manager.hpp"
 #include "main.hpp"
 #include "sensors/LRFSensor.hpp"
 #include "sensors/file_lrf.hpp"
@@ -19,7 +19,7 @@
 #include "sensors/spinmanager.hpp"
 #include "sensors/urg_lrf.hpp"
 #include "utils/FpsDisplayer.hpp"
-#include "utils/SettingParameters.hpp"
+#include "config.hpp"
 
 // singleton SensorManager CLASS
 class SensorManager {

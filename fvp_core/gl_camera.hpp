@@ -1,10 +1,10 @@
 #include <GLFW/glfw3.h>
+#include <spdlog/spdlog.h>
 
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtx/transform.hpp>
 #include <iostream>
-#include <spdlog/spdlog.h>
 
 #define _USE_MATH_DEFINES
 #include <math.h>

@@ -1,40 +1,46 @@
 #pragma once
 #include <spdlog/spdlog.h>
 
+#include <algorithm>  // std::copy
 #include <array>
-#include <fstream>
 #include <iostream>
+#include <iterator>  // std::back_inserter
 #include <mutex>
-#include <opencv2/calib3d.hpp>
-#include <opencv2/highgui/highgui.hpp>
-#include <opencv2/imgcodecs.hpp>
-#include <opencv2/imgproc.hpp>
+#include <opencv2/core.hpp>
 
-#include "LRFSensor.hpp"
-#include "config.hpp"
-#include "glslprogram.h"
-#include "ocam_functions.hpp"
+#include "cookbookogl.h"
 
 namespace fvp {
 class GLDataManager {
  private:
-  const std::shared_ptr<Config> cfg;
   int img_width, img_height;
   GLuint texID;
 
+  // camera image
+  std::vector<cv::Mat> capture_imgs;
+  std::vector<GLuint> img_pixel_buffers;
+  std::vector<bool> imgs_update_required;
+  std::vector<std::mutex *> mtxs;
+  bool is_texture_initialized;
+
+  // Mesh data (e.g., from LRF data)
+  int mesh_vertices_num = 0;
+  unsigned int mesh_vao;
+  unsigned int mesh_buffers[2];
+  std::mutex mesh_mtx;
+  bool mesh_update_required;
+
   // Triangle mesh from sensors such as LRF
-  std::vector<float> triangle_mesh_vertices;
-  std::vector<GLuint> triangle_mesh_elements;
+  std::vector<float> mesh_vertices;
+  std::vector<GLuint> mesh_elements;
+  bool is_mesh_initialized;
 
  public:
-  bool is_initialized;
-
-  GLDataManager(const std::shared_ptr<Config> &config)
-      : cfg(config), is_initialized(false), CAMERA_NUM(cfg->num_camera()) {
-  }
+  GLDataManager() : is_texture_initialized(false), is_mesh_initialized(false) {}
 
   // -----------------------------------
-  int initializeFisheye(GLSLProgram &prog) {
+  int initImages(std::vector<cv::Mat> &imgs) {
+    spdlog::info("[initImages] initializing textures in GPU");
     // Load texture file to texture array
     glActiveTexture(GL_TEXTURE0);
     glGenTextures(1, &texID);
@@ -47,15 +53,9 @@ class GLDataManager {
     //////////////////////////
     // load camera images
     //////////////////////////
+    const int CAMERA_NUM = int(imgs.size());
     for (int i = 0; i < CAMERA_NUM; i++) {
-      const std::string fname = cfg->image_filenames(i);
-      spdlog::info("Loading {}", fname);
-      cv::Mat tmp = cv::imread(fname);
-      if (tmp.empty()) {
-        spdlog::error("Cannot open image file:{}", fname);
-        throw std::runtime_error("No image file");
-      }
-      capture_imgs.push_back(tmp);
+      capture_imgs.push_back(imgs[i]);
       img_pixel_buffers.push_back(0);
       imgs_update_required.push_back(false);
       mtxs.push_back(new std::mutex());
@@ -77,13 +77,14 @@ class GLDataManager {
 
       // create a pixel buffer object. you need to delete them when program
       // exits.
+      const int DATA_SIZE = 3 * img_width * img_height;
       GLuint pixel_buffer;
       glGenBuffers(1, &pixel_buffer);
       // setPixelbuffer
       img_pixel_buffers[i] = pixel_buffer;
       glBindBuffer(GL_PIXEL_UNPACK_BUFFER, pixel_buffer);
-      glBufferData(GL_PIXEL_UNPACK_BUFFER, 3 * img_width * img_height,
-                   mat_data.data, GL_DYNAMIC_DRAW);
+      glBufferData(GL_PIXEL_UNPACK_BUFFER, DATA_SIZE, mat_data.data,
+                   GL_DYNAMIC_DRAW);
       // send data
       glTexSubImage3D(GL_TEXTURE_2D_ARRAY, 0, 0, 0, i, img_width, img_height, 1,
                       GL_BGR, GL_UNSIGNED_BYTE, nullptr);
@@ -91,47 +92,53 @@ class GLDataManager {
       imgs_update_required[i] = false;
     }
 
-    is_initialized = true;
+    is_texture_initialized = true;
     return 0;
   }
 
-  int initializeLRF() {
+  int initMesh(const std::vector<float> &vertices,
+               const std::vector<GLuint> &elements) {
+    spdlog::info("[initMesh] initializing mesh in GPU");
     //////////////////////////
-    // load LRF data
+    // load mesh from LRF data
     //////////////////////////
-    std::lock_guard<std::mutex> lock(LRF_mtx);
-    sensor::LRFSensor::loadLRFDataCSV(cfg->lrf_data_filename(), LRF_data);
-    sensor::LRFSensor::getLRFGLdata(LRF_data, triangle_mesh_vertices,
-                                    triangle_mesh_elements, LRF_model_height);
+    std::lock_guard<std::mutex> lock(mesh_mtx);
 
-    LRF_vertices_num = int(triangle_mesh_vertices.size());
-    glGenVertexArrays(1, &LRF_vaoHandle);
-    glBindVertexArray(LRF_vaoHandle);
-    glGenBuffers(2, LRF_handle);
+    std::copy(vertices.begin(), vertices.end(),
+              std::back_inserter(mesh_vertices));
+    std::copy(elements.begin(), elements.end(),
+              std::back_inserter(mesh_elements));
 
-    glBindBuffer(GL_ARRAY_BUFFER, LRF_handle[0]);
-    glBufferData(GL_ARRAY_BUFFER, triangle_mesh_vertices.size() * sizeof(float),
-                 &triangle_mesh_vertices[0], GL_DYNAMIC_DRAW);
+    mesh_vertices_num = int(mesh_vertices.size());
+    glGenVertexArrays(1, &mesh_vao);
+    glBindVertexArray(mesh_vao);
+    glGenBuffers(2, mesh_buffers);
+
+    glBindBuffer(GL_ARRAY_BUFFER, mesh_buffers[0]);
+    glBufferData(GL_ARRAY_BUFFER, mesh_vertices.size() * sizeof(float),
+                 &mesh_vertices[0], GL_DYNAMIC_DRAW);
     glVertexAttribPointer((GLuint)0, 3, GL_FLOAT, GL_FALSE, 0,
                           ((GLubyte *)NULL + (0)));
     glEnableVertexAttribArray(0);  // Vertex position
 
-    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, LRF_handle[1]);
-    glBufferData(GL_ELEMENT_ARRAY_BUFFER,
-                 triangle_mesh_elements.size() * sizeof(GLuint),
-                 &triangle_mesh_elements[0], GL_DYNAMIC_DRAW);
+    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, mesh_buffers[1]);
+    glBufferData(GL_ELEMENT_ARRAY_BUFFER, mesh_elements.size() * sizeof(GLuint),
+                 &mesh_elements[0], GL_DYNAMIC_DRAW);
 
     glBindVertexArray(0);
-    LRF_update_required = false;
+    mesh_update_required = false;
 
-    is_initialized = true;
+    is_mesh_initialized = true;
     return 0;
   }
 
   // -----------------------------------
 
-  int updateImgs(const cv::Mat &img, const int camera_id) {
-    if (!is_initialized) return 0;
+  int updateImages(const cv::Mat &img, const int camera_id) {
+    if (!is_texture_initialized) {
+      spdlog::warn("[updateImages] Texture is not initialized");
+      return 1;
+    }
     std::lock_guard<std::mutex> lock(*mtxs[camera_id]);
     // capture_imgs[camera_id] = img.clone();
     capture_imgs[camera_id] = img;
@@ -139,13 +146,22 @@ class GLDataManager {
     return 0;
   }
 
-  int updateLRF(const std::vector<sensor::LRFPoint> &lrf_data) {
-    if (!is_initialized) return 0;
-    std::lock_guard<std::mutex> lock(LRF_mtx);
-    LRF_data.clear();
-    LRF_data.reserve(lrf_data.size());
-    for (auto it : lrf_data) LRF_data.push_back(it);
-    LRF_update_required = true;
+  int updateMesh(const std::vector<float> &vertices,
+                 const std::vector<GLuint> &elements) {
+    if (!is_mesh_initialized) {
+      spdlog::warn("[updateMesh] Mesh is not initialized");
+      return 1;
+    }
+    std::lock_guard<std::mutex> lock(mesh_mtx);
+    mesh_vertices.clear();
+    mesh_vertices.reserve(vertices.size());
+    std::copy(vertices.begin(), vertices.end(),
+              std::back_inserter(mesh_vertices));
+    mesh_elements.clear();
+    mesh_elements.reserve(vertices.size());
+    std::copy(elements.begin(), elements.end(),
+              std::back_inserter(mesh_elements));
+    mesh_update_required = true;
     return 0;
   }
 
@@ -173,8 +189,8 @@ class GLDataManager {
         // If you do that, the previous data in PBO will be discarded and
         // glMapBufferARB() returns a new allocated pointer immediately
         // even if GPU is still working with the previous data.
-        int SRC_DATA_SIZE = capture_imgs[i].cols * capture_imgs[i].rows * 3;
-        glBufferData(GL_PIXEL_UNPACK_BUFFER, SRC_DATA_SIZE, 0, GL_DYNAMIC_DRAW);
+        const int DATA_SIZE = capture_imgs[i].cols * capture_imgs[i].rows * 3;
+        glBufferData(GL_PIXEL_UNPACK_BUFFER, DATA_SIZE, 0, GL_DYNAMIC_DRAW);
         GLubyte *ptr =
             (GLubyte *)glMapBuffer(GL_PIXEL_UNPACK_BUFFER, GL_WRITE_ONLY);
         if (ptr) {
@@ -182,7 +198,7 @@ class GLDataManager {
             std::lock_guard<std::mutex> lock(*mtxs[i]);
             // update data directly on the mapped buffer
             // updatePixels(ptr, DATA_SIZE);
-            memcpy(ptr, capture_imgs[i].data, SRC_DATA_SIZE);
+            memcpy(ptr, capture_imgs[i].data, DATA_SIZE);
           }
           glUnmapBuffer(
               GL_PIXEL_UNPACK_BUFFER);  // release pointer to mapping buffer
@@ -194,57 +210,39 @@ class GLDataManager {
       }
     }
     // LRF Data update
-    if (LRF_update_required) {
-      std::lock_guard<std::mutex> lock(LRF_mtx);
-      sensor::LRFSensor::getLRFGLdata(LRF_data, triangle_mesh_vertices,
-                                      triangle_mesh_elements, LRF_model_height);
-      LRF_vertices_num = int(triangle_mesh_vertices.size());
-      glBindVertexArray(LRF_vaoHandle);
+    if (mesh_update_required) {
+      std::lock_guard<std::mutex> lock(mesh_mtx);
+      mesh_vertices_num = int(mesh_vertices.size());
+      spdlog::debug("mesh updating: len(mesh_vertices) = {}",
+                    mesh_vertices_num);
+      glBindVertexArray(mesh_vao);
 
-      glBindBuffer(GL_ARRAY_BUFFER, LRF_handle[0]);
-      glBufferData(GL_ARRAY_BUFFER,
-                   triangle_mesh_vertices.size() * sizeof(float),
-                   &triangle_mesh_vertices[0], GL_DYNAMIC_DRAW);
+      glBindBuffer(GL_ARRAY_BUFFER, mesh_buffers[0]);
+      glBufferData(GL_ARRAY_BUFFER, mesh_vertices.size() * sizeof(float),
+                   &mesh_vertices[0], GL_DYNAMIC_DRAW);
       glVertexAttribPointer((GLuint)0, 3, GL_FLOAT, GL_FALSE, 0,
                             ((GLubyte *)NULL + (0)));
       glEnableVertexAttribArray(0);  // Vertex position
 
-      glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, LRF_handle[1]);
+      glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, mesh_buffers[1]);
       glBufferData(GL_ELEMENT_ARRAY_BUFFER,
-                   triangle_mesh_elements.size() * sizeof(GLuint),
-                   &triangle_mesh_elements[0], GL_DYNAMIC_DRAW);
+                   mesh_elements.size() * sizeof(GLuint), &mesh_elements[0],
+                   GL_DYNAMIC_DRAW);
 
       glBindVertexArray(0);
 
-      LRF_update_required = false;
+      mesh_update_required = false;
     }
   }
 
   //-----------------------------------------------------------------------------
   void drawModel(const std::string model_name) {
     if (model_name == "LRF") {
-      glBindVertexArray(LRF_vaoHandle);
-      glDrawElements(GL_TRIANGLES, LRF_vertices_num, GL_UNSIGNED_INT,
+      glBindVertexArray(mesh_vao);
+      glDrawElements(GL_TRIANGLES, mesh_vertices_num, GL_UNSIGNED_INT,
                      ((GLubyte *)NULL + (0)));
     }
   }
-
- private:
-  const int CAMERA_NUM;
-  // camera image
-  std::vector<cv::Mat> capture_imgs;
-  std::vector<GLuint> img_pixel_buffers;
-  std::vector<bool> imgs_update_required;
-  std::vector<std::mutex *> mtxs;
-
-  // LRF data
-  std::vector<sensor::LRFPoint> LRF_data;
-  float LRF_model_height = 3.0f;
-  int LRF_vertices_num = 0;
-  unsigned int LRF_vaoHandle;
-  unsigned int LRF_handle[2];
-  std::mutex LRF_mtx;
-  bool LRF_update_required;
 };
 
 }  // namespace fvp

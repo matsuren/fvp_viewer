@@ -41,7 +41,7 @@ bool FileLRF::retrieve(std::vector<LRFPoint> &LRF_data) {
     LRFPoint tmp_pair(std::stof(ret_str[0]), std::stof(ret_str[1]));
     LRF_data.push_back(tmp_pair);
   }
-  std::this_thread::sleep_for(std::chrono::milliseconds(50));
+  std::this_thread::sleep_for(std::chrono::milliseconds(150));
   return true;
 }
 }  // namespace sensor

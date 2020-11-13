@@ -33,8 +33,9 @@ void GLModelManager::setDrawableModel(const std::string key,
   gl_models[key] = object;
 }
 
-std::shared_ptr<model::Drawable> GLModelManager::getDrawableModel(const std::string key) {
-	return gl_models[key];
+std::shared_ptr<model::Drawable> GLModelManager::getDrawableModel(
+    const std::string key) {
+  return gl_models[key];
 }
 
 void GLModelManager::setModelMatrix(const std::string key,

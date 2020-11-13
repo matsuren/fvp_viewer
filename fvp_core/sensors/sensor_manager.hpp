@@ -10,7 +10,7 @@
 #include <opencv2/imgcodecs.hpp>
 #include <opencv2/imgproc.hpp>
 
-#include "gl_data_manager.hpp"
+#include "config.hpp"
 #include "main.hpp"
 #include "sensors/LRFSensor.hpp"
 #include "sensors/file_lrf.hpp"
@@ -19,7 +19,6 @@
 #include "sensors/spinmanager.hpp"
 #include "sensors/urg_lrf.hpp"
 #include "utils/FpsDisplayer.hpp"
-#include "config.hpp"
 
 // singleton SensorManager CLASS
 class SensorManager {
@@ -29,10 +28,9 @@ class SensorManager {
     spdlog::info("initialize SensorManager : ");
     manager = std::make_unique<sensor::SpinManager>();
     initialize();
-    startCapture(false);
   }
-  void setSensorDataManager(std::shared_ptr<fvp::GLDataManager> &manager) {
-    gl_data_mgr = manager;
+  void setFVPSystem(std::shared_ptr<fvp::System> system) {
+    fvp_system = system;
   }
   //-----------------------------------------------------------------------------
   void join() {
@@ -42,12 +40,14 @@ class SensorManager {
     ths.clear();
   }
 
+  const float LRF_wall_height = 3.0f;
+
  private:
   // setting parameters
   const std::shared_ptr<fvp::Config> cfg;
 
   std::unique_ptr<sensor::SpinManager> manager;
-  std::shared_ptr<fvp::GLDataManager> gl_data_mgr;
+  std::shared_ptr<fvp::System> fvp_system;
 
   // thread
   std::vector<std::thread> ths;
@@ -55,7 +55,6 @@ class SensorManager {
   std::vector<cv::Mat> captured_imgs;
   std::vector<std::mutex *> img_mtxs;
   std::shared_ptr<sensor::LRFSensor> LRF_sensor;
-  std::vector<sensor::LRFPoint> LRF_data;
 
   // with viewer
   bool with_viewer = false;
@@ -144,6 +143,127 @@ class SensorManager {
     // cams.back()->setWhiteBalanceRatio(1.46, "Blue");
   }
 
+  //-----------------------------------------------------------------------------
+  void captureWorker(int cam_id, bool enableFPS) {
+    std::this_thread::sleep_for(std::chrono::milliseconds(500));
+    // get fps
+    FpsDisplayer fps_displayer("Camera " + std::to_string(cam_id), 160);
+    if (enableFPS) fps_displayer.start();
+    {
+      // save initial image for calibration
+      cv::Mat tmp;
+      if (cams[cam_id]->read(tmp, false)) {
+        {
+          cv::cvtColor(tmp, tmp, cv::COLOR_BayerGR2BGR);
+          cv::imwrite("img" + std::to_string(cam_id) + ".jpg", tmp);
+        }
+      }
+    }
+
+    try {
+      // loop
+      while (!fvp_system->checkExit()) {
+        cv::Mat tmp;
+        if (cams[cam_id]->read(tmp, false)) {
+          {
+            std::lock_guard<std::mutex> lock(*img_mtxs[cam_id]);
+            cv::cvtColor(tmp, captured_imgs[cam_id], cv::COLOR_BayerGR2BGR);
+          }
+
+          // Update image for fvp
+          int ret = fvp_system->updateImages(captured_imgs[cam_id], cam_id);
+          if (ret) {
+            // FVP system is not initialized yet
+            // Wait for a little
+            std::this_thread::sleep_for(std::chrono::milliseconds(500));
+          }
+
+        } else {
+          if (captured_imgs[cam_id].empty()) {
+            // use image
+            spdlog::warn("Camera {} is not working.", cam_id);
+            spdlog::warn("Use image instead.");
+            std::this_thread::sleep_for(std::chrono::milliseconds(33));
+            break;
+          }
+        }
+        // display fps
+        if (enableFPS) fps_displayer.addCount();
+      }
+    } catch (const std::exception &e) {
+      std::cout << e.what();
+      fvp_system->checkExit();
+    }
+  }
+
+  //-----------------------------------------------------------------------------
+  void viewerWorker() {
+    with_viewer = true;
+    std::this_thread::sleep_for(std::chrono::milliseconds(500));
+    // get fps
+    FpsDisplayer fps_displayer("viewer", 250);
+    fps_displayer.start();
+    while (!fvp_system->checkExit()) {
+      size_t CAMERA_NUM = cams.size();
+      for (size_t i = 0; i < CAMERA_NUM; ++i) {
+        if (!captured_imgs[i].empty()) {
+          std::lock_guard<std::mutex> lock(*img_mtxs[i]);
+          cv::namedWindow(std::to_string(i), cv::WINDOW_NORMAL);
+          cv::imshow(std::to_string(i), captured_imgs[i]);
+        }
+        int key = cv::waitKey(50);
+        if (key == 27) fvp_system->threadExit();
+      }
+      // display fps
+      fps_displayer.addCount();
+    }
+  }
+  //-----------------------------------------------------------------------------
+  void LRFWorker(bool enableFPS) {
+    std::this_thread::sleep_for(std::chrono::milliseconds(500));
+
+    std::vector<sensor::LRFPoint> LRF_data;
+
+    // get fps
+    FpsDisplayer fps_displayer("LRF data ", 160);
+    if (enableFPS) fps_displayer.start();
+
+    {
+      // save initial scan for calibration
+      if (LRF_sensor->grab()) {
+        LRF_sensor->retrieve(LRF_data);
+        std::ofstream ofs("urg_xy.csv");
+        for (const auto &it : LRF_data) {
+          ofs << it.x << ", " << it.y << std::endl;
+        }
+      }
+    }
+
+    // loop
+    std::vector<float> vertices;
+    std::vector<GLuint> elements;
+    while (!fvp_system->checkExit()) {
+      if (LRF_sensor->grab()) {
+        LRF_sensor->retrieve(LRF_data);
+        sensor::LRFSensor::getLRFGLdata(LRF_data, vertices, elements,
+                                        LRF_wall_height);
+        int ret = fvp_system->updateMesh(vertices, elements);
+        if (ret) {
+          // FVP system is not initialized yet
+          // Wait for a little
+          std::this_thread::sleep_for(std::chrono::milliseconds(500));
+        }
+      } else {
+        spdlog::warn("LRF {} is not working.", cfg->LRF_com_port());
+        spdlog::warn("Use saved data instead.");
+        std::this_thread::sleep_for(std::chrono::milliseconds(33));
+        break;
+      }
+      // display fps
+      if (enableFPS) fps_displayer.addCount();
+    }
+  }
+
  public:
   //-----------------------------------------------------------------------------
   void startCapture(bool useImshow) {
@@ -164,109 +284,5 @@ class SensorManager {
     // LRF
     if (LRF_sensor)
       ths.push_back(std::thread(&SensorManager::LRFWorker, this, true));
-  }
-
-  //-----------------------------------------------------------------------------
-  void captureWorker(int cam_id, bool enableFPS) {
-    std::this_thread::sleep_for(std::chrono::milliseconds(200));
-    // get fps
-    FpsDisplayer fps_displayer("Camera " + std::to_string(cam_id), 160);
-    if (enableFPS) fps_displayer.start();
-    {
-      // save initial image for calibration
-      cv::Mat tmp;
-      if (cams[cam_id]->read(tmp, false)) {
-        {
-          cv::cvtColor(tmp, tmp, cv::COLOR_BayerGR2BGR);
-          cv::imwrite("img" + std::to_string(cam_id) + ".jpg", tmp);
-        }
-      }
-    }
-
-    try {
-      // loop
-      while (!checkExit()) {
-        cv::Mat tmp;
-        if (cams[cam_id]->read(tmp, false)) {
-          {
-            std::lock_guard<std::mutex> lock(*img_mtxs[cam_id]);
-            cv::cvtColor(tmp, captured_imgs[cam_id], cv::COLOR_BayerGR2BGR);
-          }
-
-          // Update image for fvp
-          gl_data_mgr->updateImgs(captured_imgs[cam_id], cam_id);
-
-        } else {
-          if (captured_imgs[cam_id].empty()) {
-            // use image
-            spdlog::warn("Camera {} is not working.", cam_id);
-            spdlog::warn("Use image instead.");
-            std::this_thread::sleep_for(std::chrono::milliseconds(33));
-            break;
-          }
-        }
-        // display fps
-        if (enableFPS) fps_displayer.addCount();
-      }
-    } catch (const std::exception &e) {
-      std::cout << e.what();
-      threadExit();
-    }
-  }
-
-  //-----------------------------------------------------------------------------
-  void viewerWorker() {
-    with_viewer = true;
-    std::this_thread::sleep_for(std::chrono::milliseconds(100));
-    // get fps
-    FpsDisplayer fps_displayer("viewer", 250);
-    fps_displayer.start();
-    while (!checkExit()) {
-      size_t CAMERA_NUM = cams.size();
-      for (size_t i = 0; i < CAMERA_NUM; ++i) {
-        if (!captured_imgs[i].empty()) {
-          std::lock_guard<std::mutex> lock(*img_mtxs[i]);
-          cv::namedWindow(std::to_string(i), cv::WINDOW_NORMAL);
-          cv::imshow(std::to_string(i), captured_imgs[i]);
-        }
-        int key = cv::waitKey(50);
-        if (key == 27) threadExit();
-      }
-      // display fps
-      fps_displayer.addCount();
-    }
-  }
-  //-----------------------------------------------------------------------------
-  void LRFWorker(bool enableFPS) {
-    std::this_thread::sleep_for(std::chrono::milliseconds(200));
-    // get fps
-    FpsDisplayer fps_displayer("LRF data ", 160);
-    if (enableFPS) fps_displayer.start();
-
-    {
-      // save initial scan for calibration
-      if (LRF_sensor->grab()) {
-        LRF_sensor->retrieve(LRF_data);
-        std::ofstream ofs("urg_xy.csv");
-        for (const auto &it : LRF_data) {
-          ofs << it.x << ", " << it.y << std::endl;
-        }
-      }
-    }
-
-    // loop
-    while (!checkExit()) {
-      if (LRF_sensor->grab()) {
-        LRF_sensor->retrieve(LRF_data);
-        gl_data_mgr->updateLRF(LRF_data);
-      } else {
-        spdlog::warn("LRF {} is not working.", cfg->LRF_com_port());
-        spdlog::warn("Use saved data instead.");
-        std::this_thread::sleep_for(std::chrono::milliseconds(33));
-        break;
-      }
-      // display fps
-      if (enableFPS) fps_displayer.addCount();
-    }
   }
 };

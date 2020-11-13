@@ -6,7 +6,7 @@
 #include <opencv2/core.hpp>
 
 namespace model {
-	class Drawable;
+class Drawable;
 }
 
 namespace fvp {

@@ -1,4 +1,4 @@
-#include <GLFW/glfw3.h>
+#pragma once
 #include <spdlog/spdlog.h>
 
 #include <glm/glm.hpp>
@@ -8,15 +8,11 @@
 
 #define _USE_MATH_DEFINES
 #include <math.h>
-using glm::mat4;
-using glm::vec2;
-using glm::vec3;
-using glm::vec4;
 
-// singleton GLCameraManager CLASS
-class GLCameraManager {
- private:
-  GLCameraManager()
+namespace fvp {
+class GLCamera {
+ public:
+  GLCamera()
       : angle(glm::radians(-95.0f)),
         phi(glm::radians(30.0f)),
         tPrev(0.0f),
@@ -24,20 +20,8 @@ class GLCameraManager {
         isAnimation(false),
         phi_min(0.0f),
         phi_max(float(M_PI / 2.0f - 0.00001f)) {
-    spdlog::info("initialize GLCameraManager : ");
+    spdlog::info("initialize GLCamera : ");
   };
-  ~GLCameraManager() = default;
-
- public:
-  GLCameraManager(const GLCameraManager &) = delete;
-  GLCameraManager &operator=(const GLCameraManager &) = delete;
-  GLCameraManager(GLCameraManager &&) = delete;
-  GLCameraManager &operator=(GLCameraManager &&) = delete;
-
-  static GLCameraManager &getInstance() {
-    static GLCameraManager inst;
-    return inst;
-  }
 
   // update
   void update(float t) {
@@ -54,8 +38,8 @@ class GLCameraManager {
     // if (abs(angle) > 2*glm::two_pi<float>())
     //	rotSpeed *= -1;
   }
-  // update
-  mat4 getViewMat() {
+  // Get GL camera view matrix
+  glm::mat4 getViewMat() {
     if (phi < phi_min) {
       phi = phi_min;
       prev_phi = phi;
@@ -68,12 +52,12 @@ class GLCameraManager {
     static int plus_minus = 1;
     float distance = zoom / 100.0f;
     // vec3 cameraPos = vec3(2.0f, 1.0f, 0.0f);
-    vec3 cameraPos =
-        vec3(distance * cos(angle) * cos(phi) + lookat_position.x,
-             distance * sin(angle) * cos(phi) + lookat_position.y,
-             plus_minus * (distance * sin(phi) + lookat_position.z));
+    glm::vec3 cameraPos =
+        glm::vec3(distance * cos(angle) * cos(phi) + lookat_position.x,
+                  distance * sin(angle) * cos(phi) + lookat_position.y,
+                  plus_minus * (distance * sin(phi) + lookat_position.z));
     view = glm::lookAt(cameraPos, lookat_position,
-                       vec3(0.0f, 0.0f, plus_minus * 1.0f));
+                       glm::vec3(0.0f, 0.0f, plus_minus * 1.0f));
     return view;
   }
 
@@ -105,29 +89,32 @@ class GLCameraManager {
   }
 
   // light position
-  void setWorldLightPosition(const vec4 &light_position) {
+  void setWorldLightPosition(const glm::vec4 &light_position) {
     world_light = light_position;
   }
-  vec4 getWorldLightPosition() const { return world_light; }
+  glm::vec4 getWorldLightPosition() const { return world_light; }
 
- public:
+  void diffAngle(double diff_angle) { angle += diff_angle; };
+  void diffPhi(double diff_phi) { angle += diff_phi; };
+
+ private:
   float angle, phi;
   float phi_min, phi_max;
 
- private:
   float tPrev, rotSpeed;
-  mat4 view;
+  glm::mat4 view;
   bool isAnimation;
   int zoom = 290;
-  vec3 lookat_position = vec3(0.0f, 0.0f, 1.0f);
+  glm::vec3 lookat_position = glm::vec3(0.0f, 0.0f, 1.0f);
 
   bool isDragged = false;
-  vec2 prev_mouse_pos;
+  glm::vec2 prev_mouse_pos;
   float prev_angle;
   float prev_phi;
   float drag_sensitive = 0.004f;
   int zoom_sensitive = 5;
 
   // light
-  vec4 world_light;
+  glm::vec4 world_light;
 };
+}  // namespace fvp

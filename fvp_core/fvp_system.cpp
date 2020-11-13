@@ -1,36 +1,40 @@
 #include "fvp_system.hpp"
 
+#include <GLFW/glfw3.h>
+#include <rplidar.h>
 #include <spdlog/fmt/fmt.h>
 #include <spdlog/spdlog.h>
 
 #include <array>
 #include <cstdio>
 #include <cstdlib>
-#include <iostream>
-
-#include "config.hpp"
-#include "gl_data_manager.hpp"
-#include "glutils.h"
-#include "main.hpp"
-
-using glm::vec3;
-
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/type_ptr.hpp>
 #include <glm/gtx/string_cast.hpp>
 #include <glm/gtx/transform.hpp>
+#include <iostream>
+#include <opencv2/highgui.hpp>
 
+#include "config.hpp"
+#include "cookbookogl.h"
 #include "gl_camera.hpp"
+#include "gl_data_manager.hpp"
 #include "gl_model_manager.hpp"
+#include "glutils.h"
+#include "main.hpp"
 #include "models/dome.hpp"
+#include "ocam_functions.hpp"
 
 namespace fvp {
 System::System(const std::shared_ptr<Config> &config)
     : cfg(config),
+      window_title("Free viewpoint image generation"),
       is_animating(false),
       render_mode(RenderMode::LRF),
       CAMERA_NUM(cfg->num_camera()) {
   model_mgr = std::make_unique<GLModelManager>();
+  gl_cam_mgr = std::make_unique<GLCamera>();
+  gl_data_mgr = std::make_unique<GLDataManager>();
 }
 //-----------------------------------------------------------------------------
 void System::initScene() {
@@ -73,7 +77,6 @@ void System::initScene() {
   prog.use();
   prog.setUniform("CAMERA_NUM", CAMERA_NUM);
 
-
   ////////////////////////////////////////
   // Load camera extrinsic and intrinsic
   ////////////////////////////////////////
@@ -112,24 +115,14 @@ void System::initScene() {
     prog.printActiveUniforms();
     std::cout << std::endl;
   }
-
-
-
   // environment setting
   prog_robot.use();  // Don't foget call prog.use() before call prog.set_uniform
   const vec4 worldLight = vec4(5.0f, 5.0f, -4.0f, 1.0f);
-  GLCameraManager::getInstance().setWorldLightPosition(worldLight);
-
-
-  
-  
-  // Load sample images into GPU
-  gl_data_mgr->initializeFisheye(prog);
-  gl_data_mgr->initializeLRF();
+  gl_cam_mgr->setWorldLightPosition(worldLight);
 }
 //-----------------------------------------------------------------------------
 void System::update(float t) {
-  GLCameraManager::getInstance().update(t);
+  gl_cam_mgr->update(t);
   model_mgr->update(t);
   gl_data_mgr->update(t);
 }
@@ -140,7 +133,7 @@ void System::render() {
   glEnable(GL_CULL_FACE);
   glCullFace(GL_BACK);
   // get camera view matrix
-  ViewMatrix = GLCameraManager::getInstance().getViewMat();
+  ViewMatrix = gl_cam_mgr->getViewMat();
 
   prog.use();
 
@@ -183,7 +176,7 @@ void System::setMatrices() {
 //-----------------------------------------------------------------------------
 void System::setMatricesPassthrough() {
   prog_robot.setUniform("PointSize", 8.0f);
-  ViewMatrix = GLCameraManager::getInstance().getViewMat();
+  ViewMatrix = gl_cam_mgr->getViewMat();
   const mat4 mv = ViewMatrix * ModelMatrix;
   prog_robot.setUniform("ModelViewMatrix", mv);
   prog_robot.setUniform("NormalMatrix",
@@ -191,8 +184,7 @@ void System::setMatricesPassthrough() {
   prog_robot.setUniform("MVP", ProjMatrix * mv);
 
   // light
-  const vec4 worldLight =
-      GLCameraManager::getInstance().getWorldLightPosition();
+  const vec4 worldLight = gl_cam_mgr->getWorldLightPosition();
   prog_robot.setUniform("Light.Position", ViewMatrix * worldLight);
   prog_robot.setUniform("Light.Ld", vec4(1.0f, 1.0f, 1.0f, 1.0f));
   prog_robot.setUniform("Light.La", vec4(1.0f, 1.0f, 1.0f, 1.0f));
@@ -291,5 +283,23 @@ void System::setCameraCalibData(const std::string fname, const int cam_id) {
   // set array
   prog.setUniform(param_name + ".invpol", o.invpol, INVPOL_MAX);
   prog.setUniform(param_name + ".pol", o.pol, POL_MAX);
+}
+
+int System::saveCapture(const std::string fname) {
+  char *buffer;
+  int width, height;
+  getwinsize(width, height);
+  buffer = (char *)calloc(4, width * height);
+  glReadPixels(0, 0, width, height, GL_RGBA, GL_UNSIGNED_BYTE, buffer);
+  cv::Mat img(height, width, CV_8UC4, buffer);
+  cv::flip(img, img, 0);
+  cv::cvtColor(img, img, cv::COLOR_RGBA2BGR);
+  int ret = cv::imwrite(fname, img);
+  if (ret) {
+    spdlog::info("Screen capture: {}", fname);
+  } else {
+    spdlog::error("Screen capture error: {}", fname);
+  }
+  return ret;
 }
 }  // namespace fvp

@@ -1,7 +1,7 @@
 #include <spdlog/spdlog.h>
 
 #include <fvp/config.hpp>
-#include <fvp/fvp_sytem.hpp>
+#include <fvp/fvp_system.hpp>
 #include <opencv2/highgui.hpp>
 
 int main(int argc, char *argv[]) {

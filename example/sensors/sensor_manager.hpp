@@ -10,7 +10,8 @@
 #include <opencv2/imgcodecs.hpp>
 #include <opencv2/imgproc.hpp>
 
-#include "config.hpp"
+#include "fvp/fvp_system.hpp"
+#include "fvp/config.hpp"
 #include "sensors/base_lrf.hpp"
 #include "sensors/file_lrf.hpp"
 #include "sensors/rplidar_lrf.hpp"

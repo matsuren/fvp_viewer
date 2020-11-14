@@ -16,7 +16,7 @@ target_link_libraries(
   PRIVATE spdlog::spdlog ${OpenCV_LIBS})
 target_include_directories(simple_example PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
 
-set(WITH_SENSORS OFF)
+set(WITH_SENSORS ON)
 if(WITH_SENSORS)
   # ############################################################################
   # Spinnaker SDK

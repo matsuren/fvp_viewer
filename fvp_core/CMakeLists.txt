@@ -40,7 +40,7 @@ target_sources(
           "glslcookbook/glslprogram.cpp"
           "glslcookbook/glutils.cpp"
   PUBLIC "fvp/config.hpp" 
-         "fvp/fvp_sytem.hpp"
+         "fvp/fvp_system.hpp"
          "fvp/gl_camera.hpp" 
          "fvp/gl_data_manager.hpp"
          "fvp/gl_model_manager.hpp"

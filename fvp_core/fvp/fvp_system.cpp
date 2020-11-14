@@ -1,4 +1,4 @@
-#include "fvp/fvp_sytem.hpp"
+#include "fvp/fvp_system.hpp"
 
 #include <spdlog/fmt/fmt.h>
 #include <spdlog/spdlog.h>

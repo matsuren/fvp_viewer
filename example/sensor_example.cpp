@@ -1,7 +1,7 @@
 #include <spdlog/spdlog.h>
 
-#include "config.hpp"
-#include "fvp_system.hpp"
+#include "fvp/config.hpp"
+#include "fvp/fvp_system.hpp"
 #include "sensors/sensor_manager.hpp"
 
 int main(int argc, char *argv[]) {

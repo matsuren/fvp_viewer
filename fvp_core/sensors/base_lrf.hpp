@@ -95,49 +95,48 @@ class BaseLRF {
     vertices.push_back(0.0f);
     vertices.push_back(0.0f);
 
-    for (size_t i = 1; i < LRF_data.size(); i++) {
-      double diff_x = LRF_data[i].x - LRF_data[i - 1].x;
-      double diff_y = LRF_data[i].y - LRF_data[i - 1].y;
-      double distance = sqrt(diff_x * diff_x + diff_y * diff_y);
+    int current_num = 0;
+    for (size_t i = 0; i < LRF_data.size(); i++) {
+      current_num = int(vertices.size() / 3);
 
-      int current_num = int(vertices.size() / 3);
-      // vertex
-      vertices.push_back(LRF_data[i - 1].x);
-      vertices.push_back(LRF_data[i - 1].y);
+      // vertex : current_num
+      vertices.push_back(LRF_data[i].x);
+      vertices.push_back(LRF_data[i].y);
       vertices.push_back(0.0f);
-
-      vertices.push_back(LRF_data[i - 1].x);
-      vertices.push_back(LRF_data[i - 1].y);
-      vertices.push_back(height);
-
+      // vertex : current_num + 1
       vertices.push_back(LRF_data[i].x);
       vertices.push_back(LRF_data[i].y);
       vertices.push_back(height);
 
-      vertices.push_back(LRF_data[i].x);
-      vertices.push_back(LRF_data[i].y);
-      vertices.push_back(0.0f);
+      // No element when i == 0
+      if (i == 0) continue;
 
-      if (distance < distance_threshold) {
-        // element
-        elements.push_back(current_num);
-        elements.push_back(current_num + 1);
-        elements.push_back(current_num + 2);
-
-        elements.push_back(current_num);
-        elements.push_back(current_num + 2);
-        elements.push_back(current_num + 3);
-      }
-
-      // floor
-      elements.push_back(0);
+      // element for wall
       elements.push_back(current_num);
-      elements.push_back(current_num + 3);
+      elements.push_back(current_num - 2);
+      elements.push_back(current_num -1 );
+
+      elements.push_back(current_num);
+      elements.push_back(current_num -1);
+      elements.push_back(current_num + 1);
+
+      // element for floor
+      elements.push_back(0);
+      elements.push_back(current_num - 2);
+      elements.push_back(current_num);
     }
+
+    // wall loop close
+    elements.push_back(1);
+    elements.push_back(current_num);
+    elements.push_back(current_num+1);
+
+    elements.push_back(1);
+    elements.push_back(current_num+ 1);
+    elements.push_back(2);
 
     // floor loop close
     elements.push_back(0);
-    int current_num = int(vertices.size() / 3) - 1;
     elements.push_back(current_num);
     elements.push_back(1);
   }

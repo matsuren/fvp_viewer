@@ -102,7 +102,7 @@ int GLDataManager::initMesh(const std::vector<float> &vertices,
   std::copy(elements.begin(), elements.end(),
             std::back_inserter(mesh_elements));
 
-  mesh_vertices_num = int(mesh_vertices.size());
+  mesh_element_num = int(mesh_elements.size());
   glGenVertexArrays(1, &mesh_vao);
   glBindVertexArray(mesh_vao);
   glGenBuffers(2, mesh_buffers);
@@ -136,7 +136,7 @@ int GLDataManager::updateMesh(const std::vector<float> &vertices,
   std::copy(vertices.begin(), vertices.end(),
             std::back_inserter(mesh_vertices));
   mesh_elements.clear();
-  mesh_elements.reserve(vertices.size());
+  mesh_elements.reserve(elements.size());
   std::copy(elements.begin(), elements.end(),
             std::back_inserter(mesh_elements));
   mesh_update_required = true;
@@ -194,8 +194,8 @@ void GLDataManager::update(float t) {
   // LRF Data update
   if (mesh_update_required) {
     std::lock_guard<std::mutex> lock(mesh_mtx);
-    mesh_vertices_num = int(mesh_vertices.size());
-    spdlog::debug("mesh updating: len(mesh_vertices) = {}", mesh_vertices_num);
+    mesh_element_num = int(mesh_elements.size());
+    spdlog::debug("mesh updating: len(mesh_elements) = {}", mesh_element_num);
     glBindVertexArray(mesh_vao);
 
     glBindBuffer(GL_ARRAY_BUFFER, mesh_buffers[0]);
@@ -219,7 +219,7 @@ void GLDataManager::update(float t) {
 void GLDataManager::drawModel(const std::string model_name) {
   if (model_name == "LRF") {
     glBindVertexArray(mesh_vao);
-    glDrawElements(GL_TRIANGLES, mesh_vertices_num, GL_UNSIGNED_INT,
+    glDrawElements(GL_TRIANGLES, mesh_element_num, GL_UNSIGNED_INT,
                    ((GLubyte *)NULL + (0)));
   }
 }

@@ -19,7 +19,7 @@ class GLDataManager {
   bool is_texture_initialized;
 
   // Mesh data (e.g., from LRF data)
-  int mesh_vertices_num = 0;
+  int mesh_element_num = 0;
   unsigned int mesh_vao;
   unsigned int mesh_buffers[2];
   std::mutex mesh_mtx;

@@ -11,8 +11,7 @@
 #include <opencv2/imgproc.hpp>
 
 #include "config.hpp"
-#include "main.hpp"
-#include "sensors/LRFSensor.hpp"
+#include "sensors/base_lrf.hpp"
 #include "sensors/file_lrf.hpp"
 #include "sensors/rplidar_lrf.hpp"
 #include "sensors/spincamera.hpp"
@@ -54,7 +53,7 @@ class SensorManager {
   std::vector<sensor::SpinCamPtr> cams;
   std::vector<cv::Mat> captured_imgs;
   std::vector<std::mutex *> img_mtxs;
-  std::shared_ptr<sensor::LRFSensor> LRF_sensor;
+  std::shared_ptr<sensor::BaseLRF> LRF_sensor;
 
   // with viewer
   bool with_viewer = false;
@@ -245,7 +244,7 @@ class SensorManager {
     while (!fvp_system->checkExit()) {
       if (LRF_sensor->grab()) {
         LRF_sensor->retrieve(LRF_data);
-        sensor::LRFSensor::getLRFGLdata(LRF_data, vertices, elements,
+        sensor::BaseLRF::getLRFGLdata(LRF_data, vertices, elements,
                                         LRF_wall_height);
         int ret = fvp_system->updateMesh(vertices, elements);
         if (ret) {

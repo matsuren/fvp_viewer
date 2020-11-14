@@ -23,7 +23,7 @@ class SpinManager {
     CameraList camList = system->GetCameras();
     const unsigned int numCameras = camList.GetSize();
     spdlog::info("Number of cameras detected: {}", numCameras);
-    for (size_t i = 0; i < numCameras; i++) {
+    for (int i = 0; i < numCameras; i++) {
       auto pCam = camList.GetByIndex(i);
       pCams.push_back(pCam);
       pCam->Init();
@@ -45,7 +45,7 @@ class SpinManager {
     return getCamera(idx);
   }
 
-  int size() { return pCams.size(); }
+  int size() { return int(pCams.size()); }
   std::map<std::string, int> serial2idx;
 
  private:

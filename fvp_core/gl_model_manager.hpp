@@ -27,8 +27,12 @@ class GLModelManager {
   // Set drawable model using key
   void setDrawableModel(const std::string key,
                         std::shared_ptr<model::Drawable> object);
+
   // Get drawable model using key
   std::shared_ptr<model::Drawable> getDrawableModel(const std::string key);
+
+  // Get all drawable model keys
+  std::vector<std::string> getAllModelKeys();
 
   // Set ModelMatrix (cv::Mat or glm::mat4) using key
   void setModelMatrix(const std::string key, const cv::Mat &cv_model_matrix);

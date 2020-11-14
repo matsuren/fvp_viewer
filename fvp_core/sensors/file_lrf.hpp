@@ -1,10 +1,10 @@
 #pragma once
 #include <vector>
 #include <string>
-#include "sensors/LRFSensor.hpp"
+#include "sensors/base_lrf.hpp"
 
 namespace sensor {
-class FileLRF : public LRFSensor {
+class FileLRF : public BaseLRF {
  public:
   FileLRF(const std::string base_filename);
 

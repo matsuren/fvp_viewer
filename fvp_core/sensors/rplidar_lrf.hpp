@@ -3,7 +3,7 @@
 #include <string>
 #include <vector>
 
-#include "sensors/LRFSensor.hpp"
+#include "sensors/base_lrf.hpp"
 
 namespace rp {
 namespace standalone {
@@ -14,7 +14,7 @@ class RPlidarDriver;
 }  // namespace rp
 
 namespace sensor {
-class RplidarLRF : public LRFSensor {
+class RplidarLRF : public BaseLRF {
  public:
   RplidarLRF(const std::string &com_port);
   ~RplidarLRF();

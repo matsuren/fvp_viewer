@@ -3,10 +3,10 @@
 
 #include <vector>
 
-#include "sensors/LRFSensor.hpp"
+#include "sensors/base_lrf.hpp"
 
 namespace sensor {
-class UrgLRF : public LRFSensor {
+class UrgLRF : public BaseLRF {
  public:
   UrgLRF(int argc, char *argv[]);
 

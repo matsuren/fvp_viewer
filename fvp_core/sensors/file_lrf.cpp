@@ -37,7 +37,7 @@ bool FileLRF::retrieve(std::vector<LRFPoint> &LRF_data) {
   LRF_data.clear();
   std::string tmp_str;
   while (std::getline(ifs_lrf, tmp_str)) {
-    std::vector<std::string> ret_str = LRFSensor::split(tmp_str, ",");
+    std::vector<std::string> ret_str = BaseLRF::split(tmp_str, ",");
     LRFPoint tmp_pair(std::stof(ret_str[0]), std::stof(ret_str[1]));
     LRF_data.push_back(tmp_pair);
   }

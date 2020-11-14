@@ -38,6 +38,14 @@ std::shared_ptr<model::Drawable> GLModelManager::getDrawableModel(
   return gl_models[key];
 }
 
+std::vector<std::string> GLModelManager::getAllModelKeys() {
+  std::vector<std::string> keys;
+  for (auto const &it : gl_models) {
+    keys.push_back(it.first);
+  }
+  return keys;
+}
+
 void GLModelManager::setModelMatrix(const std::string key,
                                     const cv::Mat &cv_model_matrix) {
   cv::Mat tmp_viewmat;

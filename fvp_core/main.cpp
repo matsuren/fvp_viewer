@@ -1,6 +1,5 @@
 #include "main.hpp"
 
-#include <GLFW/glfw3.h>
 #include <spdlog/spdlog.h>
 
 #include "config.hpp"
@@ -24,10 +23,8 @@ int main(int argc, char *argv[]) {
     fvp_system = std::make_shared<fvp::System>(cfg);
     sensor_mgr = std::make_unique<SensorManager>(cfg);
     sensor_mgr->setFVPSystem(fvp_system);
-
     // Initialize GLFW and create window
     fvp_system->initGLFW();
-
     // Loading sample images
     std::vector<cv::Mat> sample_imgs;
     for (int i = 0; i < cfg->num_camera(); i++) {
@@ -44,10 +41,10 @@ int main(int argc, char *argv[]) {
 
     // Loading sample LRF data
     std::vector<sensor::LRFPoint> LRF_data;
-    sensor::LRFSensor::loadLRFDataCSV(cfg->lrf_data_filename(), LRF_data);
+    sensor::BaseLRF::loadLRFDataCSV(cfg->lrf_data_filename(), LRF_data);
     std::vector<float> vertices;
     std::vector<GLuint> elements;
-    sensor::LRFSensor::getLRFGLdata(LRF_data, vertices, elements,
+    sensor::BaseLRF::getLRFGLdata(LRF_data, vertices, elements,
                                     sensor_mgr->LRF_wall_height);
     fvp_system->initMesh(vertices, elements);
 
@@ -68,17 +65,13 @@ int main(int argc, char *argv[]) {
     // Take care of SensorManager
     sensor_mgr->join();
 
-    // Close window and terminate GLFW
-    glfwTerminate();
-
   } catch (const std::exception &e) {
     spdlog::error("Catch exception: {}", e.what());
     // Finish thread
     fvp_system->threadExit();
     // Take care of SensorManager
     sensor_mgr->join();
-    // Close window and terminate GLFW
-    glfwTerminate();
+
     return -1;
   }
 

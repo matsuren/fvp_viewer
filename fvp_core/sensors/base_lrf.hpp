@@ -23,9 +23,9 @@ struct LRFPoint {
   }
 };
 
-class LRFSensor {
+class BaseLRF {
  public:
-  LRFSensor(){};
+  BaseLRF(){};
 
   virtual int grab(void) = 0;
   virtual bool retrieve(std::vector<LRFPoint> &LRF_data) = 0;
@@ -42,7 +42,7 @@ class LRFSensor {
     LRF_data.clear();
     std::string str;
     while (std::getline(ifs_lrf, str)) {
-      std::vector<std::string> ret_str = LRFSensor::split(str, ",");
+      std::vector<std::string> ret_str = BaseLRF::split(str, ",");
       LRFPoint tmp_pair(std::stof(ret_str[0]), std::stof(ret_str[1]));
       LRF_data.push_back(tmp_pair);
     }

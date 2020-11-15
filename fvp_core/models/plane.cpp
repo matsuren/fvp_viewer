@@ -1,4 +1,4 @@
-#include "plane.hpp"
+#include "models/plane.hpp"
 #include "glslcookbook/glutils.h"
 #include "glslcookbook/cookbookogl.h"
 

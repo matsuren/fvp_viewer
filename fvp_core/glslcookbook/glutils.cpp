@@ -1,4 +1,4 @@
-#include "glutils.h"
+#include "glslcookbook/glutils.h"
 
 #include "glslcookbook/cookbookogl.h"
 

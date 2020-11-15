@@ -11,9 +11,9 @@
 #include <opencv2/core.hpp>
 #include <opencv2/imgproc.hpp>
 
-#include "gl_camera.hpp"
-#include "gl_data_manager.hpp"
-#include "gl_model_manager.hpp"
+#include "fvp/gl_camera.hpp"
+#include "fvp/gl_data_manager.hpp"
+#include "fvp/gl_model_manager.hpp"
 #include "glslcookbook/glslprogram.h"
 
 struct GLFWwindow;

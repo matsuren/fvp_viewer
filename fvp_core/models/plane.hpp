@@ -1,6 +1,6 @@
 #pragma once
 
-#include "drawable.hpp"
+#include "models/drawable.hpp"
 namespace model {
 	class Plane : public Drawable
 	{

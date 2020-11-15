@@ -2,7 +2,7 @@
 #include "glslcookbook/cookbookogl.h"
 #include <GLFW/glfw3.h>
 // clang-format on
-#include "gl_data_manager.hpp"
+#include "fvp/gl_data_manager.hpp"
 #include <spdlog/spdlog.h>
 
 #include <algorithm>  // std::copy

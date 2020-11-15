@@ -1,4 +1,4 @@
-#include "gl_camera.hpp"
+#include "fvp/gl_camera.hpp"
 
 #include <spdlog/spdlog.h>
 

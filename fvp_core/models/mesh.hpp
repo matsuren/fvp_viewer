@@ -9,7 +9,7 @@
 #include "assimp/mesh.h"
 #include "assimp/scene.h"
 
-#include "drawable.hpp"
+#include "models/drawable.hpp"
 #include "glm/glm.hpp"
 #include "glslcookbook/glslprogram.h"
 

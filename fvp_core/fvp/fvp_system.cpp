@@ -1,4 +1,4 @@
-#include "fvp_system.hpp"
+#include "fvp/fvp_sytem.hpp"
 
 #include <spdlog/fmt/fmt.h>
 #include <spdlog/spdlog.h>
@@ -10,15 +10,15 @@
 #include <iostream>
 #include <opencv2/highgui.hpp>
 
-#include "config.hpp"
-#include "gl_camera.hpp"
-#include "gl_data_manager.hpp"
-#include "gl_model_manager.hpp"
+#include "fvp/config.hpp"
+#include "fvp/gl_camera.hpp"
+#include "fvp/gl_data_manager.hpp"
+#include "fvp/gl_model_manager.hpp"
 #include "glslcookbook/glutils.h"
 #include "models/dome.hpp"
 #include "models/mesh.hpp"
 #include "models/plane.hpp"
-#include "ocam_functions.hpp"
+#include "calib/ocam_functions.hpp"
 
 namespace fvp {
 System::System(const std::shared_ptr<Config> &config)

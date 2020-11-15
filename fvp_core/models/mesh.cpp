@@ -1,15 +1,15 @@
-#include "mesh.hpp"
+#include "models/mesh.hpp"
 
 #include <fstream>
 #include <iostream>
-#include <opencv2\highgui.hpp>
-#include <opencv2\imgcodecs.hpp>
-#include <opencv2\imgproc.hpp>
+#include <opencv2/highgui.hpp>
+#include <opencv2/imgcodecs.hpp>
+#include <opencv2/imgproc.hpp>
 #include <vector>
 
-#include "assimp\DefaultLogger.hpp"
-#include "assimp\Importer.hpp"
-#include "assimp\postprocess.h"
+#include "assimp/DefaultLogger.hpp"
+#include "assimp/Importer.hpp"
+#include "assimp/postprocess.h"
 
 namespace model {
 Mesh::MeshEntry::MeshEntry(aiMesh *mesh) {

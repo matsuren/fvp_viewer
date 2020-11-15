@@ -5,7 +5,7 @@
    Author: Davide Scaramuzza - email: davide.scaramuzza@ieee.org
 ------------------------------------------------------------------------------*/
 
-#include "ocam_functions.hpp"
+#include "calib/ocam_functions.hpp"
 
 //------------------------------------------------------------------------------
 int get_ocam_model(struct ocam_model *myocam_model, const char *filename) {

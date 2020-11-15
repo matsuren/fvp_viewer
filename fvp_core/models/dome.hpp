@@ -1,6 +1,6 @@
 #pragma once
 
-#include "drawable.hpp"
+#include "models/drawable.hpp"
 #include <string>
 #include <vector>
 

@@ -1,8 +1,8 @@
-#include "glslprogram.h"
+#include "glslcookbook/glslprogram.h"
 
 #include <fstream>
 
-#include "glutils.h"
+#include "glslcookbook/glutils.h"
 using std::ifstream;
 using std::ios;
 

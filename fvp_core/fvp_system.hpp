@@ -1,6 +1,6 @@
 #pragma once
 // clang-format off
-#include "cookbookogl.h"
+#include "glslcookbook/cookbookogl.h"
 #include <GLFW/glfw3.h>
 // clang-format on
 #include <spdlog/spdlog.h>
@@ -14,7 +14,7 @@
 #include "gl_camera.hpp"
 #include "gl_data_manager.hpp"
 #include "gl_model_manager.hpp"
-#include "glslprogram.h"
+#include "glslcookbook/glslprogram.h"
 
 struct GLFWwindow;
 

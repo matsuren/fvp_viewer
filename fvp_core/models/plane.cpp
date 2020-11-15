@@ -1,9 +1,6 @@
 #include "plane.hpp"
-#include "glutils.h"
-
-#include "cookbookogl.h"
-
-#include "glutils.h"
+#include "glslcookbook/glutils.h"
+#include "glslcookbook/cookbookogl.h"
 
 #include <cstdio>
 #include <cmath>

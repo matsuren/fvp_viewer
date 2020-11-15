@@ -1,7 +1,7 @@
 #ifndef GLUTILS_H
 #define GLUTILS_H
 
-#include "cookbookogl.h"
+#include "glslcookbook/cookbookogl.h"
 
 namespace GLUtils
 {

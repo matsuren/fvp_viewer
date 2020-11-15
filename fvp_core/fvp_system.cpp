@@ -14,7 +14,7 @@
 #include "gl_camera.hpp"
 #include "gl_data_manager.hpp"
 #include "gl_model_manager.hpp"
-#include "glutils.h"
+#include "glslcookbook/glutils.h"
 #include "models/dome.hpp"
 #include "models/mesh.hpp"
 #include "models/plane.hpp"
@@ -32,7 +32,11 @@ System::System(const std::shared_ptr<Config> &config)
       win_height(540),
       render_mode(RenderMode::LRF),
       is_animating(false),
-      exit_flag(false) {}
+      exit_flag(false) {
+  std::cout << "+++++++++++++++++++++++++++++++++++++++" << std::endl;
+  std::cout << "+++ Free viewpoint image generation +++" << std::endl;
+  std::cout << "+++++++++++++++++++++++++++++++++++++++" << std::endl;
+}
 //-----------------------------------------------------------------------------
 int System::initGLFW() {
   // Initialize GLFW

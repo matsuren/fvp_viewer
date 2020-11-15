@@ -1,6 +1,6 @@
 #pragma once
 // clang-format off
-#include "cookbookogl.h"
+#include "glslcookbook/cookbookogl.h"
 #include <GLFW/glfw3.h>
 // clang-format on
 
@@ -11,7 +11,7 @@
 
 #include "drawable.hpp"
 #include "glm/glm.hpp"
-#include "glslprogram.h"
+#include "glslcookbook/glslprogram.h"
 
 namespace model {
 class Mesh : public Drawable {

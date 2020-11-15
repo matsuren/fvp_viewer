@@ -7,7 +7,7 @@
 
 #include <string>
 
-#include "cookbookogl.h"
+#include "glslcookbook/cookbookogl.h"
 using std::string;
 #include <glm/glm.hpp>
 #include <map>

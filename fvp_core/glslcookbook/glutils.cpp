@@ -1,6 +1,6 @@
 #include "glutils.h"
 
-#include "cookbookogl.h"
+#include "glslcookbook/cookbookogl.h"
 
 #include <cstdio>
 #include <string>

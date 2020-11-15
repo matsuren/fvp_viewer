@@ -2,7 +2,7 @@
 #include <string>
 #include <vector>
 
-#include "cookbookogl.h"
+#include "glslcookbook/cookbookogl.h"
 #define _USE_MATH_DEFINES
 #include <math.h>
 

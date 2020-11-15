@@ -17,7 +17,7 @@
 #include "sensors/spincamera.hpp"
 #include "sensors/spinmanager.hpp"
 #include "sensors/urg_lrf.hpp"
-#include "utils/FpsDisplayer.hpp"
+#include "FpsDisplayer.hpp"
 
 // singleton SensorManager CLASS
 class SensorManager {

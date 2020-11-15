@@ -4,7 +4,7 @@ find_package(spdlog REQUIRED)
 
 # ##############################################################################
 # OpenGL
-find_package(GLFW3 REQUIRED)
+find_package(glfw3 3.3 REQUIRED)
 find_package(OpenGL REQUIRED)
 
 # ##############################################################################

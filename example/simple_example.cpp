@@ -5,7 +5,6 @@
 #include <opencv2/highgui.hpp>
 
 int main(int argc, char *argv[]) {
-
   // Set logger
   // Runtime log levels
   spdlog::set_level(spdlog::level::info);
@@ -38,7 +37,7 @@ int main(int argc, char *argv[]) {
     const int tmp_width = 3.0;
     //
     vertices.push_back(0);
-    vertices.push_back(2*tmp_width);
+    vertices.push_back(2 * tmp_width);
     vertices.push_back(0.0f);
     //
     vertices.push_back(-tmp_width);
@@ -65,8 +64,6 @@ int main(int argc, char *argv[]) {
     // Enter the main loop
     fvp_system->mainLoop();
     ///////////////////////////////
-
-
 
   } catch (const std::exception &e) {
     spdlog::error("Catch exception: {}", e.what());

@@ -23,8 +23,8 @@ If you use this code for your academic research, please cite the following paper
 
 Visual Studio 2015, 2017, 2019
 
-## Installation
-
+## Build 
+### Windows
 Please install OpenCV first.
 
 Clone repository:
@@ -35,6 +35,16 @@ git clone --recurse-submodules https://github.com/matsuren/fvp_viewer.git
 
 After that, run `build_script_win.bat` for Visual Studio 2019.
 (If you use Visual Studio 2015 or 2017, please change `GENERATOR_NAME` in `build_script_win.bat`.)
+
+### Ubuntu (tested in 16.04)
+Please install OpenCV first.
+```bash
+git clone --recurse-submodules https://github.com/matsuren/fvp_viewer.git
+cd fvp_viewer
+sh build_script_ubuntu.sh
+cd build/example
+./simple_example
+```
 
 ## Calibration
 
@@ -54,5 +64,3 @@ The structure of `data` folder is the followings:
     └── robot_align_matrix.yml (Robot model pose estimated using our calibration program)
 
 You can modify the serial number of the cameras, the COM port for LRF, etc. in `config_FVP_parameters.json`.
-
-After build, run `viewer` to generate free viewpoint images.

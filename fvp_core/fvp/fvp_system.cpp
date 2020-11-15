@@ -2,6 +2,7 @@
 
 #include <spdlog/fmt/fmt.h>
 #include <spdlog/spdlog.h>
+#include <memory>
 
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/type_ptr.hpp>

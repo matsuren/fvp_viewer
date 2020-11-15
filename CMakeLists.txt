@@ -13,7 +13,7 @@ set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 
 # Add warning level if you want
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}")
-set(CMAKE_CXX_STANDARD 11)
+set(CMAKE_CXX_STANDARD 14)
 
 # Build using multicore
 if(MSVC)

@@ -9,12 +9,15 @@ find_package(spdlog REQUIRED)
 # ##############################################################################
 # Project
 add_executable(simple_example)
-target_sources(simple_example PRIVATE "simple_example.cpp")
+set(EXAMPLE_SOURCES PRIVATE "simple_example.cpp")
+target_sources(simple_example ${EXAMPLE_SOURCES})
 target_link_libraries(
   simple_example
   PUBLIC fvp_core
   PRIVATE spdlog::spdlog ${OpenCV_LIBS})
 target_include_directories(simple_example PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
+# directory structure
+source_group(TREE "${CMAKE_CURRENT_SOURCE_DIR}/" FILES ${EXAMPLE_SOURCES})
 
 set(WITH_SENSORS ON)
 if(WITH_SENSORS)
@@ -83,15 +86,22 @@ if(WITH_SENSORS)
   target_link_libraries(urg_lib PRIVATE setupapi.lib ws2_32.lib comctl32.lib)
   set_property(TARGET urg_lib PROPERTY FOLDER "urg")
 
-
   # ############################################################################
   # Example with sensor
   add_executable(sensor_example)
-  target_sources(
-    sensor_example
-    PRIVATE "sensor_example.cpp" "sensors/file_lrf.cpp"
-            "sensors/rplidar_lrf.cpp" "sensors/spincamera.cpp"
-            "sensors/urg_lrf.cpp" ${URG_SOURCES})
+  set(SENSOR_SOURCES
+      PRIVATE "sensor_example.cpp" "sensors/file_lrf.cpp"
+      "sensors/rplidar_lrf.cpp" "sensors/spincamera.cpp" "sensors/urg_lrf.cpp")
+  set(SENSOR_HEADERS
+      PRIVATE
+      "FpsDisplayer.hpp"
+      "sensors/sensor_manager.hpp"
+      "sensors/file_lrf.hpp"
+      "sensors/rplidar_lrf.hpp"
+      "sensors/spincamera.hpp"
+      "sensors/spinmanager.hpp"
+      "sensors/urg_lrf.hpp")
+  target_sources(sensor_example ${SENSOR_SOURCES} ${SENSOR_HEADERS})
   target_link_libraries(
     sensor_example
     PUBLIC fvp_core
@@ -100,4 +110,7 @@ if(WITH_SENSORS)
   target_include_directories(
     sensor_example PUBLIC ${CMAKE_CURRENT_SOURCE_DIR} ${Spinnaker_INCLUDE_DIR}
                           ${rplidar_INCLUDE_DIR})
+  # directory structure
+  source_group(TREE "${CMAKE_CURRENT_SOURCE_DIR}/" FILES ${SENSOR_SOURCES}
+                                                         ${SENSOR_HEADERS})
 endif(WITH_SENSORS)

@@ -5,8 +5,8 @@
         "image_sources": [
             "15637060",
             "15637085",
-            "16025862",
-            "16025863"
+            "16025863",
+            "16025862"
         ],
         "ocamcalib_files": "calib_results_*.txt",
         "sample_image_files": "img*.jpg",
@@ -14,7 +14,7 @@
         "robot_model_file": "robot.ply",
         "robot_align_yml": "robot_align_matrix.yml",
         "capture_framerate": 20,
-        "LRF_com_port": "COM4",
+        "LRF_com_port": "com3",
         "lrf_align_yml": "lrf_align_matrix.yml",
         "sample_lrf_file": "urg_xy.csv"
     }

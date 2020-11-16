@@ -18,7 +18,8 @@ find_package(OpenCV REQUIRED)
 # ##############################################################################
 # Project
 set(CMAKE_WINDOWS_EXPORT_ALL_SYMBOLS ON)
-add_library(fvp_core STATIC) # SHARED
+#add_library(fvp_core STATIC) # SHARED
+add_library(fvp_core SHARED) # STATIC
 target_include_directories(
         fvp_core
         PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/../include"

@@ -40,12 +40,12 @@ Config::Config(std::string cfg_fname) {
   // Load config file
   // If there is no config file, it will generate default config file
   spdlog::info("Load config file: {}", cfg_fname);
-  const size_t found =cfg_fname.find_last_of("/\\");
+  const size_t found = cfg_fname.find_last_of("/\\");
   std::string fname;
-  if(found != std::string::npos){
-    base_folder = cfg_fname.substr(0,found);
-    fname = cfg_fname.substr(found+1);
-  }else{
+  if (found != std::string::npos) {
+    base_folder = cfg_fname.substr(0, found);
+    fname = cfg_fname.substr(found + 1);
+  } else {
     base_folder = ".";
     fname = cfg_fname;
   }
@@ -55,10 +55,10 @@ Config::Config(std::string cfg_fname) {
   try {
     cereal::JSONInputArchive i_archive(ifs);
     i_archive(data);
-  }catch (cereal::Exception& e){
+  } catch (cereal::Exception &e) {
     if (!ifs) {
       spdlog::error("Cannot read config file : {}", fname);
-    }else{
+    } else {
       spdlog::error("cereal::Exception : {}", e.what());
     }
     std::ofstream os(fname);
@@ -67,8 +67,6 @@ Config::Config(std::string cfg_fname) {
     o_archive(cereal::make_nvp("FVP_settings", data));
     throw std::runtime_error("No config or wrong config file");
   }
-
-
 }
 const std::string Config::calib_full() {
   return fmt::format("{}/{}", base_folder, data.calib_folder);
@@ -111,8 +109,9 @@ const std::vector<std::string> Config::image_sources() {
 const int Config::capture_framerate() { return data.capture_framerate; }
 
 void Config::getRobotPose(cv::Mat &trans_matrix) {
-  const auto fs = cv::FileStorage(
-      fmt::format("{}/{}", calib_full(), data.robot_align_yml), cv::FileStorage::READ);
+  const auto fs =
+      cv::FileStorage(fmt::format("{}/{}", calib_full(), data.robot_align_yml),
+                      cv::FileStorage::READ);
   if (!fs.isOpened()) {
     spdlog::error("Cannot open file: {} in {}.", data.robot_align_yml,
                   calib_full());
@@ -131,8 +130,9 @@ void Config::getRobotPose(cv::Mat &trans_matrix) {
 }
 
 void Config::getLRFPose(double &trans_x, double &trans_y, double &rot_rad) {
-  const auto fs = cv::FileStorage(
-      fmt::format("{}/{}", calib_full(), data.lrf_align_yml), cv::FileStorage::READ);
+  const auto fs =
+      cv::FileStorage(fmt::format("{}/{}", calib_full(), data.lrf_align_yml),
+                      cv::FileStorage::READ);
 
   if (!fs.isOpened()) {
     spdlog::error("Cannot open file: {} in {}.", data.lrf_align_yml,

@@ -3,7 +3,7 @@
 #include <fvp/config.hpp>
 #include <fvp/fvp_system.hpp>
 #include <opencv2/highgui.hpp>
-
+using GLuint = unsigned int;
 int main(int argc, char *argv[]) {
   // Set logger
   // Runtime log levels

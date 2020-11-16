@@ -1,22 +1,12 @@
 #pragma once
-// clang-format off
-#include "glslcookbook/cookbookogl.h"
-#include <GLFW/glfw3.h>
-// clang-format on
-#include <spdlog/spdlog.h>
-
-#include <array>
+#include <vector>
 #include <atomic>
 #include <memory>
 #include <opencv2/core.hpp>
-#include <opencv2/imgproc.hpp>
-
-#include "fvp/gl_camera.hpp"
-#include "fvp/gl_data_manager.hpp"
-#include "fvp/gl_model_manager.hpp"
-#include "glslcookbook/glslprogram.h"
+#include "glm/glm.hpp"
 
 struct GLFWwindow;
+class GLSLProgram;
 
 namespace fvp {
 class Config;
@@ -25,35 +15,24 @@ class GLModelManager;
 class GLCamera;
 
 enum class RenderMode { FLOOR = 1, DOME, LRF };
-
+using GLuint = unsigned int;
 class System {
  public:
   System(const std::shared_ptr<Config> &config);
+  ~System();
 
   //////////////////////////////////
   // Interface for GLDataManager
   //////////////////////////////////
-  int initImages(std::vector<cv::Mat> &imgs) {
-    int ret = gl_data_mgr->initImages(imgs);
-    return ret;
-  }
+  int initImages(std::vector<cv::Mat> &imgs);
   //-----------------------------------------------------------------------------
-  int updateImages(const cv::Mat &img, const int camera_id) {
-    int ret = gl_data_mgr->updateImages(img, camera_id);
-    return ret;
-  }
+  int updateImages(const cv::Mat &img, const int camera_id);
   //-----------------------------------------------------------------------------
   int initMesh(const std::vector<float> &vertices,
-               const std::vector<GLuint> &elements) {
-    int ret = gl_data_mgr->initMesh(vertices, elements);
-    return ret;
-  }
+               const std::vector<GLuint> &elements);
   //-----------------------------------------------------------------------------
   int updateMesh(const std::vector<float> &vertices,
-                 const std::vector<GLuint> &elements) {
-    int ret = gl_data_mgr->updateMesh(vertices, elements);
-    return ret;
-  }
+                 const std::vector<GLuint> &elements);
   //////////////////////////////////
 
 
@@ -119,13 +98,13 @@ class System {
   RenderMode render_mode;
 
   // GLSLProgram for shader
-  GLSLProgram prog;
-  GLSLProgram prog_robot;
+  std::shared_ptr<GLSLProgram> prog;
+  std::shared_ptr<GLSLProgram> prog_robot;
 
   // Matrices used in shader
   glm::mat4 ModelMatrix;
   glm::mat4 ViewMatrix;
-  std::array<glm::mat4, 4> FisheyeViews;
+  std::vector<glm::mat4> FisheyeViews;
   glm::mat4 ProjMatrix;
 
   // Animation

@@ -1,4 +1,9 @@
 # ##############################################################################
+# CMakeLists based on https://github.com/Bagira80/More-Modern-CMake
+cmake_minimum_required(VERSION 3.13) # More-Modern-CMake
+project(fvp_example)
+
+# ##############################################################################
 # OpenCV 3.1
 find_package(OpenCV REQUIRED)
 

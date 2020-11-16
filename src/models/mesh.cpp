@@ -14,11 +14,11 @@
 namespace model {
 Mesh::MeshEntry::MeshEntry(aiMesh *mesh) {
   const bool PRINT_FLAG = false;
-  vbo[VERTEX_BUFFER] = NULL;
-  vbo[TEXCOORD_BUFFER] = NULL;
-  vbo[NORMAL_BUFFER] = NULL;
-  vbo[INDEX_BUFFER] = NULL;
-  vbo[COLOR_BUFFER] = NULL;
+  vbo[VERTEX_BUFFER] = 0;
+  vbo[TEXCOORD_BUFFER] = 0;
+  vbo[NORMAL_BUFFER] = 0;
+  vbo[INDEX_BUFFER] = 0;
+  vbo[COLOR_BUFFER] = 0;
 
   glGenVertexArrays(1, &vao);
   glBindVertexArray(vao);
@@ -233,7 +233,7 @@ void Mesh::MeshEntry::initMaterial(const aiMaterial *mtl) {
 /**
  *	Set prog.setUniform("Material.HOGE", 0.8f, 0.8f, 0.8f);
  **/
-void Mesh::MeshEntry::setMaterial(GLSLProgram *prog) const {
+void Mesh::MeshEntry::setMaterial(const std::shared_ptr<GLSLProgram> &prog) const {
   prog->setUniform("Material.Kd", matparam.Kd);
   prog->setUniform("Material.Ka", matparam.Ka);
   prog->setUniform("Material.Ks", matparam.Ks);
@@ -249,7 +249,7 @@ void Mesh::MeshEntry::setBasePath(const std::string &path) { basepath = path; }
 /**
  *	Renders this MeshEntry
  **/
-void Mesh::MeshEntry::render(GLSLProgram *prog) const {
+void Mesh::MeshEntry::render(const std::shared_ptr<GLSLProgram> &prog) const {
   glBindVertexArray(vao);
   setMaterial(prog);
   glActiveTexture(GL_TEXTURE0);
@@ -290,7 +290,8 @@ void Mesh::destroyAILogger() {
 /**
  *	Mesh constructor, loads the specified filename if supported by Assimp
  **/
-Mesh::Mesh(const std::string &filename, GLSLProgram *prog) : _prog(prog) {
+Mesh::Mesh(const std::string &filename, std::shared_ptr<GLSLProgram> &prog)
+    : _prog(prog) {
   createAILogger();
 
   Assimp::Importer importer;
@@ -340,10 +341,7 @@ void Mesh::render() const {
     meshEntries[i].render(_prog);
   }
 }
-/**
- *	Set program to use setUniform
- **/
-void Mesh::setProgram(GLSLProgram *prog) { _prog = prog; }
+
 /**
  *	get basepath
  **/

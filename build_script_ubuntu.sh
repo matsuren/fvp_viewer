@@ -8,7 +8,7 @@ cd $DEV_DIR
 git clone https://github.com/glfw/glfw.git -b 3.3.2 --depth 1
 cd glfw
 mkdir build && cd build
-cmake -DGLFW_BUILD_TESTS=OFF -DGLFW_BUILD_EXAMPLES=OFF -DGLFW_BUILD_DOCS=OFF ..
+cmake -DGLFW_BUILD_TESTS=OFF -DGLFW_BUILD_EXAMPLES=OFF -DGLFW_BUILD_DOCS=OFF -DBUILD_SHARED_LIBS=ON ..
 make -j8
 sudo make install
 
@@ -25,7 +25,7 @@ cd $DEV_DIR
 git clone https://github.com/gabime/spdlog.git -b v1.8.1 --depth 1
 cd spdlog
 mkdir build && cd build
-cmake ..
+cmake -DSPDLOG_BUILD_SHARED=ON ..
 make -j8
 sudo make install
 

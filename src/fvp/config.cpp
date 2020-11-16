@@ -61,8 +61,9 @@ Config::Config(std::string cfg_fname) {
     } else {
       spdlog::error("cereal::Exception : {}", e.what());
     }
-    std::ofstream os(fname);
-    spdlog::info("Generating default config file : ./{}", fname);
+    const std::string default_fname = fname + "_default";
+    std::ofstream os(default_fname);
+    spdlog::info("Generating default config file : ./{}", default_fname);
     cereal::JSONOutputArchive o_archive(os);
     o_archive(cereal::make_nvp("FVP_settings", data));
     throw std::runtime_error("No config or wrong config file");

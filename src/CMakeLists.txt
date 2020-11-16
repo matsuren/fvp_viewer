@@ -22,7 +22,9 @@ set(CMAKE_WINDOWS_EXPORT_ALL_SYMBOLS ON)
 add_library(fvp_core SHARED) # STATIC
 target_include_directories(
         fvp_core
-        PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/../include"
+        PUBLIC
+        $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/../include>
+        $<INSTALL_INTERFACE:include/fvp_core>
         PRIVATE ${ASSIMP_INCLUDE_DIRS})
 
 set(FVP_SOURCES
@@ -55,13 +57,32 @@ set(FVP_HEADERS
         "${CMAKE_CURRENT_SOURCE_DIR}/../include/glslcookbook/cookbookogl.h"
         "${CMAKE_CURRENT_SOURCE_DIR}/../include/glslcookbook/glslprogram.h"
         "${CMAKE_CURRENT_SOURCE_DIR}/../include/glslcookbook/glutils.h")
-target_sources(fvp_core PRIVATE ${FVP_SOURCES} PUBLIC ${FVP_HEADERS})
+target_sources(fvp_core PRIVATE ${FVP_SOURCES} PRIVATE ${FVP_HEADERS} INTERFACE
+        $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/../include/fvp/fvp_system.hpp>
+        $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/../include/fvp/config.hpp>
+        $<INSTALL_INTERFACE:include/fvp_core/fvp/fvp_system.hpp>
+        $<INSTALL_INTERFACE:include/fvp_core/fvp/config.hpp>
+        )
 target_link_libraries(
-        fvp_core PUBLIC ${OpenCV_LIBS} ${OPENGL_gl_LIBRARY} spdlog::spdlog
+        fvp_core PRIVATE ${OpenCV_LIBS} ${OPENGL_gl_LIBRARY} spdlog::spdlog
         Thirdparty::HeaderOnly ${ASSIMP_LIBRARIES} glfw)
-target_link_directories(fvp_core PUBLIC ${ASSIMP_LIBRARY_DIRS})
+target_link_directories(fvp_core PRIVATE ${ASSIMP_LIBRARY_DIRS})
 target_compile_features(fvp_core PUBLIC cxx_std_14)
 
 # directory structure
 source_group(TREE "${CMAKE_CURRENT_SOURCE_DIR}/" FILES ${FVP_SOURCES})
 source_group(TREE "${CMAKE_CURRENT_SOURCE_DIR}/../include" FILES ${FVP_HEADERS})
+
+# install
+install(TARGETS fvp_core
+        EXPORT fvp_core-config
+        LIBRARY DESTINATION lib
+        ARCHIVE DESTINATION lib
+        RUNTIME DESTINATION bin
+        )
+install(DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/../include/" DESTINATION include/fvp_core)
+install(DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/../thirdparty/glm/glm/" DESTINATION include/fvp_core/glm)
+install(EXPORT fvp_core-config DESTINATION share/fvp_core/cmake)
+
+# This makes the project importable from the build directory
+export(TARGETS fvp_core FILE fvp_core-config.cmake)

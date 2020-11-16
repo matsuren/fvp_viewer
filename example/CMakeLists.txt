@@ -19,7 +19,7 @@ target_include_directories(simple_example PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
 # directory structure
 source_group(TREE "${CMAKE_CURRENT_SOURCE_DIR}/" FILES ${EXAMPLE_SOURCES})
 
-set(WITH_SENSORS ON)
+set(WITH_SENSORS OFF)
 if(WITH_SENSORS)
   # ############################################################################
   # Spinnaker SDK

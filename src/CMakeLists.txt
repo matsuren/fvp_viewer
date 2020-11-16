@@ -1,7 +1,3 @@
-IF(POLICY CMP0012)
-    CMAKE_POLICY(SET CMP0012 NEW)
-ENDIF()
-
 # ##############################################################################
 # spdlog
 find_package(spdlog REQUIRED)

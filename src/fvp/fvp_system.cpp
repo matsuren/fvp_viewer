@@ -341,16 +341,16 @@ void System::setRenderMode(const RenderMode mode) { render_mode = mode; }
 void System::compileAndLinkShader() {
   spdlog::info("Compile and link shader");
   try {
-    const std::string base = "../../shader/";
+    const std::string base = cfg->shader_full();
     spdlog::info("Loading projtex.[vert, frag] from {}", base);
-    prog.compileShader("../../shader/projtex.vert");
-    prog.compileShader("../../shader/projtex.frag");
+    prog.compileShader(std::string(base + "/projtex.vert").c_str());
+    prog.compileShader(std::string(base + "/projtex.frag").c_str());
     prog.link();
     prog.use();
 
     spdlog::info("Loading simple_assimp.[vert, frag] from {}", base);
-    prog_robot.compileShader("../../shader/simple_assimp.vert");
-    prog_robot.compileShader("../../shader/simple_assimp.frag");
+    prog_robot.compileShader(std::string(base + "/simple_assimp.vert").c_str());
+    prog_robot.compileShader(std::string(base + "/simple_assimp.frag").c_str());
     prog_robot.link();
     // prog_robot.use();
   } catch (GLSLProgramException &e) {

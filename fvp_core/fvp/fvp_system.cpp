@@ -11,6 +11,7 @@
 #include <iostream>
 #include <opencv2/highgui.hpp>
 
+#include "calib/ocam_functions.hpp"
 #include "fvp/config.hpp"
 #include "fvp/gl_camera.hpp"
 #include "fvp/gl_data_manager.hpp"
@@ -19,7 +20,6 @@
 #include "models/dome.hpp"
 #include "models/mesh.hpp"
 #include "models/plane.hpp"
-#include "calib/ocam_functions.hpp"
 
 namespace fvp {
 System::System(const std::shared_ptr<Config> &config)
@@ -63,8 +63,21 @@ int System::initGLFW() {
     return -1;
   }
   glfwMakeContextCurrent(window);
-  // glfwSwapInterval(0)  doesn't wait for refresh
-  glfwSwapInterval(1);
+
+  // Load the OpenGL functions.
+  if (!gladLoadGL()) {
+    return -1;
+  }
+  // Doesn't work for NVIDIA GPU
+  if (glfwExtensionSupported("GLX_SGI_swap_control") ||
+      glfwExtensionSupported("GLX_EXT_swap_control") ||
+      glfwExtensionSupported("WGL_EXT_swap_control")) {
+    if (glfwExtensionSupported("GLX_EXT_swap_control_tear") ||
+        glfwExtensionSupported("WGL_EXT_swap_control_tear"))
+      glfwSwapInterval(-1);
+    else
+      glfwSwapInterval(1);
+  }
 
   glfwSetWindowUserPointer(window, this);
   glfwSetKeyCallback(window, key_callback);
@@ -73,11 +86,6 @@ int System::initGLFW() {
   glfwSetCursorPosCallback(window, cursor_position_callback);
   // set window size
   glfwSetWindowSizeCallback(window, resize_callback);
-
-  // Load the OpenGL functions.
-  if (!gladLoadGL()) {
-    return -1;
-  }
 
   if (SPDLOG_LEVEL_DEBUG >= spdlog::get_level()) {
     GLUtils::dumpGLInfo();

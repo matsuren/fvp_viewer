@@ -247,7 +247,8 @@ void System::mainLoop() {
   int index = 0;
 
   while (!glfwWindowShouldClose(window) &&
-         !glfwGetKey(window, GLFW_KEY_ESCAPE)) {
+         !glfwGetKey(window, GLFW_KEY_ESCAPE) &&
+         !checkExit()) {
     GLUtils::checkForOpenGLError(__FILE__, __LINE__);
     update(float(glfwGetTime()));
     render();

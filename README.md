@@ -46,6 +46,16 @@ cd build/example
 ./simple_example
 ```
 
+### ROS wrapper (Working in progress)
+```bash
+git clone --recurse-submodules https://github.com/matsuren/fvp_viewer.git
+cd fvp_viewer
+sh build_script_ubuntu.sh
+sudo make install
+cd ../ros
+catkin_make
+```
+
 ## Calibration
 
 - Attach four fisheye cameras and a LRF on a robot.

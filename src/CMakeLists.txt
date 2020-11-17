@@ -16,6 +16,11 @@ find_package(Assimp REQUIRED)
 find_package(OpenCV REQUIRED)
 
 # ##############################################################################
+if(NOT DEFINED CMAKE_DEBUG_POSTFIX)
+  set(CMAKE_DEBUG_POSTFIX "-d")
+endif()
+
+# ##############################################################################
 # Project
 set(CMAKE_WINDOWS_EXPORT_ALL_SYMBOLS ON)
 #add_library(fvp_core STATIC) # SHARED

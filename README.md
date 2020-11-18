@@ -54,6 +54,9 @@ sh build_script_ubuntu.sh
 sudo make install
 cd ../ros
 catkin_make
+source devel/setup.bash
+rosparam set /fvp_viewer/config $CONFIG_DIR/config_FVP_parameters.json
+rosrun fvp_viewer fvp_node
 ```
 
 ## Calibration

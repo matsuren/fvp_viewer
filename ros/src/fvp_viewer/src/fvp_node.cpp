@@ -1,13 +1,14 @@
 #include "fvp_viewer/fvp_node.hpp"
 #include <cv_bridge/cv_bridge.h>
 #include <image_transport/image_transport.h>
+#include <ros/package.h>
+#include <ros/ros.h>
+#include <sensor_msgs/LaserScan.h>
 #include <sensor_msgs/image_encodings.h>
 #include <spdlog/spdlog.h>
+#include <tf/transform_listener.h>
 #include <opencv2/highgui/highgui.hpp>
 #include <opencv2/imgproc/imgproc.hpp>
-#include "ros/ros.h"
-#include "sensor_msgs/LaserScan.h"
-#include "tf/transform_listener.h"
 
 #include <fvp/config.hpp>
 #include <fvp/fvp_system.hpp>
@@ -30,7 +31,8 @@ class LaserScanListenerNode {
 
  public:
   // Constructor
-  LaserScanListenerNode(std::shared_ptr<fvp::System> &fvp) : _system(fvp), _wall_height(3.0) {
+  LaserScanListenerNode(std::shared_ptr<fvp::System> &fvp)
+      : _system(fvp), _wall_height(3.0) {
     _sub = _nh.subscribe("scan", 1000, &LaserScanListenerNode::callback, this);
   }
 
@@ -136,14 +138,16 @@ void render_worker(std::shared_ptr<fvp::System> &fvp_system,
 
 int main(int argc, char **argv) {
   ros::init(argc, argv, "fvp_node");
+  ros::NodeHandle pnh("~");
 
   // Set logger
   // Runtime log levels
   spdlog::set_level(spdlog::level::info);
-  // spdlog::set_level(spdlog::level::trace);
+  //   spdlog::set_level(spdlog::level::trace);
   std::shared_ptr<fvp::System> fvp_system;
   try {
-    const std::string cfg_fname = "../../../../config_FVP_parameters.json";
+    std::string cfg_fname;
+    pnh.param<std::string>("config", cfg_fname, "config_FVP_parameters.json");
     auto cfg = std::make_shared<fvp::Config>(cfg_fname);
     fvp_system = std::make_shared<fvp::System>(cfg);
 
@@ -160,8 +164,8 @@ int main(int argc, char **argv) {
     for (int cam_id = 0; cam_id < cfg->num_camera(); ++cam_id) {
       image_nodes.emplace_back(fvp_system, cam_id);
     }
-//    ImageListenerNode image_node_0(_system, 0);
-//    ImageListenerNode image_node_1(_system, 1);
+    //    ImageListenerNode image_node_0(_system, 0);
+    //    ImageListenerNode image_node_1(_system, 1);
 
     ros::MultiThreadedSpinner spinner(5);  // Use multiple threads
     spinner.spin();  // spin() will not return until the node has been shutdown

@@ -21,8 +21,8 @@ If you use this code for your academic research, please cite the following paper
 
 ## Environment
 
-Visual Studio 2015, 2017, 2019
-
+Windows: Visual Studio 2015, 2017, 2019  
+Ubuntu16.04
 ## Build 
 ### Windows
 Please install OpenCV first.
@@ -45,6 +45,20 @@ sh build_script_ubuntu.sh
 cd build/example
 ./simple_example
 ```
+
+### ROS wrapper (Tested in Kinetic)
+```bash
+git clone --recurse-submodules https://github.com/matsuren/fvp_viewer.git
+cd fvp_viewer
+sh build_script_ubuntu.sh
+sudo make install
+cd ../ros
+catkin_make
+source devel/setup.bash
+rosparam set /fvp_viewer/config $fvp_viewer/config_FVP_parameters.json
+rosrun fvp_viewer fvp_node
+```
+After running fvp_node, please publish LaserScan (`/scan`) and images (`/camera{i}/image_raw`).
 
 ## Calibration
 

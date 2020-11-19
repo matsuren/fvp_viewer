@@ -14,7 +14,7 @@ struct ConfigData {
   // data folder that contains calibrated data.
   // ex. img*.jpg, calib_results_*.txt, final_camera_poses.yml
   std::string calib_folder;
-  std::string record_folder;
+  std::string shader_folder;
   std::vector<std::string> image_sources;
 
   int capture_framerate;
@@ -33,9 +33,14 @@ struct ConfigData {
 class Config {
  private:
   ConfigData data;
+  std::string base_folder;
 
  public:
   Config(std::string cfg_fname);
+  // Calibration folder full path (base + calib_folder)
+  const std::string calib_full();
+  // shader folder full path (base + shader_folder)
+  const std::string shader_full();
   const std::string cam_pose_filename();
   const std::string image_filenames(int i);
   const std::string calib_filenames(int i);
@@ -44,7 +49,7 @@ class Config {
   const std::string lrf_data_filename();
   const std::string LRF_com_port();
 
-  const std::string record_folder();
+  const std::string shader_folder();
   const int num_camera();
   const std::vector<std::string> image_sources();
   const int capture_framerate();

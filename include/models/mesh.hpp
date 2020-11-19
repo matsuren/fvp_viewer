@@ -3,7 +3,7 @@
 #include "glslcookbook/cookbookogl.h"
 #include <GLFW/glfw3.h>
 // clang-format on
-
+#include <memory>
 #include <vector>
 
 #include "assimp/mesh.h"
@@ -48,9 +48,9 @@ class Mesh : public Drawable {
     MeshEntry(aiMesh *mesh);
     ~MeshEntry();
     void initMaterial(const aiMaterial *mtl_);
-    void setMaterial(GLSLProgram *prog) const;
+    void setMaterial(const std::shared_ptr<GLSLProgram> &prog) const;
     void setBasePath(const std::string &path);
-    void render(GLSLProgram *prog) const;
+    void render(const std::shared_ptr<GLSLProgram> &prog) const;
   };
 
   std::vector<MeshEntry> meshEntries;
@@ -59,12 +59,11 @@ class Mesh : public Drawable {
   void destroyAILogger();
 
  public:
-  Mesh(const std::string &filename, GLSLProgram *prog);
+  Mesh(const std::string &filename, std::shared_ptr<GLSLProgram> &prog);
   ~Mesh(void);
-  GLSLProgram *_prog;  // Default program
+  const std::shared_ptr<GLSLProgram> _prog;  // Default program
 
   void render() const;
-  void setProgram(GLSLProgram *prog);
   float scale = 1.0f;
 
  private:

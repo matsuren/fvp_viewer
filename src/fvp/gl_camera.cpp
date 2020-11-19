@@ -4,7 +4,6 @@
 
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
-#include <glm/gtx/transform.hpp>
 #include <string>
 
 #define _USE_MATH_DEFINES

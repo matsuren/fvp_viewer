@@ -1,4 +1,9 @@
 # ##############################################################################
+# CMakeLists based on https://github.com/Bagira80/More-Modern-CMake
+cmake_minimum_required(VERSION 3.13) # More-Modern-CMake
+project(fvp_example)
+
+# ##############################################################################
 # OpenCV 3.1
 find_package(OpenCV REQUIRED)
 
@@ -14,12 +19,12 @@ target_sources(simple_example ${EXAMPLE_SOURCES})
 target_link_libraries(
   simple_example
   PUBLIC fvp_core
-  PRIVATE spdlog::spdlog ${OpenCV_LIBS})
+  PRIVATE spdlog::spdlog ${OpenCV_LIBS} Thirdparty::HeaderOnly)
 target_include_directories(simple_example PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
 # directory structure
 source_group(TREE "${CMAKE_CURRENT_SOURCE_DIR}/" FILES ${EXAMPLE_SOURCES})
 
-set(WITH_SENSORS ON)
+set(WITH_SENSORS OFF)
 if(WITH_SENSORS)
   # ############################################################################
   # Spinnaker SDK
@@ -106,7 +111,7 @@ if(WITH_SENSORS)
     sensor_example
     PUBLIC fvp_core
     PUBLIC spdlog::spdlog ${OpenCV_LIBS} ${rplidar_LIBS} ${Spinnaker_LIBS}
-           urg_lib)
+           urg_lib Thirdparty::HeaderOnly)
   target_include_directories(
     sensor_example PUBLIC ${CMAKE_CURRENT_SOURCE_DIR} ${Spinnaker_INCLUDE_DIR}
                           ${rplidar_INCLUDE_DIR})

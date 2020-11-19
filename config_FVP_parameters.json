@@ -1,7 +1,7 @@
 {
     "FVP_settings": {
-        "calib_folder": "../../data",
-        "record_folder": "../../raw_data",
+        "calib_folder": "data",
+        "shader_folder": "shader",
         "image_sources": [
             "15637060",
             "15637085",

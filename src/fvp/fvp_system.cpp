@@ -1,4 +1,8 @@
 #include "fvp/fvp_system.hpp"
+#include "fvp/config.hpp"
+#include "fvp/gl_camera.hpp"
+#include "fvp/gl_data_manager.hpp"
+#include "fvp/gl_model_manager.hpp"
 
 #include <spdlog/fmt/fmt.h>
 #include <spdlog/spdlog.h>
@@ -10,16 +14,13 @@
 #include <glm/gtx/transform.hpp>
 #include <iostream>
 #include <opencv2/highgui.hpp>
+#include <opencv2/imgproc.hpp>
 
-#include "fvp/config.hpp"
-#include "fvp/gl_camera.hpp"
-#include "fvp/gl_data_manager.hpp"
-#include "fvp/gl_model_manager.hpp"
+#include "calib/ocam_functions.hpp"
 #include "glslcookbook/glutils.h"
 #include "models/dome.hpp"
 #include "models/mesh.hpp"
 #include "models/plane.hpp"
-#include "calib/ocam_functions.hpp"
 
 namespace fvp {
 System::System(const std::shared_ptr<Config> &config)
@@ -32,12 +33,41 @@ System::System(const std::shared_ptr<Config> &config)
       win_width(720),
       win_height(540),
       render_mode(RenderMode::LRF),
+      prog(std::make_shared<GLSLProgram>()),
+      prog_robot(std::make_shared<GLSLProgram>()),
       is_animating(false),
       exit_flag(false) {
   std::cout << "+++++++++++++++++++++++++++++++++++++++" << std::endl;
   std::cout << "+++ Free viewpoint image generation +++" << std::endl;
   std::cout << "+++++++++++++++++++++++++++++++++++++++" << std::endl;
 }
+System::~System() {}
+
+//////////////////////////////////
+// Interface for GLDataManager
+//////////////////////////////////
+int System::initImages(std::vector<cv::Mat> &imgs) {
+  int ret = gl_data_mgr->initImages(imgs);
+  return ret;
+}
+//-----------------------------------------------------------------------------
+int System::updateImages(const cv::Mat &img, const int camera_id) {
+  int ret = gl_data_mgr->updateImages(img, camera_id);
+  return ret;
+}
+//-----------------------------------------------------------------------------
+int System::initMesh(const std::vector<float> &vertices,
+                     const std::vector<GLuint> &elements) {
+  int ret = gl_data_mgr->initMesh(vertices, elements);
+  return ret;
+}
+//-----------------------------------------------------------------------------
+int System::updateMesh(const std::vector<float> &vertices,
+                       const std::vector<GLuint> &elements) {
+  int ret = gl_data_mgr->updateMesh(vertices, elements);
+  return ret;
+}
+//////////////////////////////////
 //-----------------------------------------------------------------------------
 int System::initGLFW() {
   // Initialize GLFW
@@ -63,8 +93,21 @@ int System::initGLFW() {
     return -1;
   }
   glfwMakeContextCurrent(window);
-  // glfwSwapInterval(0)  doesn't wait for refresh
-  glfwSwapInterval(1);
+
+  // Load the OpenGL functions.
+  if (!gladLoadGL()) {
+    return -1;
+  }
+  // Doesn't work for NVIDIA GPU
+  if (glfwExtensionSupported("GLX_SGI_swap_control") ||
+      glfwExtensionSupported("GLX_EXT_swap_control") ||
+      glfwExtensionSupported("WGL_EXT_swap_control")) {
+    if (glfwExtensionSupported("GLX_EXT_swap_control_tear") ||
+        glfwExtensionSupported("WGL_EXT_swap_control_tear"))
+      glfwSwapInterval(-1);
+    else
+      glfwSwapInterval(1);
+  }
 
   glfwSetWindowUserPointer(window, this);
   glfwSetKeyCallback(window, key_callback);
@@ -73,11 +116,6 @@ int System::initGLFW() {
   glfwSetCursorPosCallback(window, cursor_position_callback);
   // set window size
   glfwSetWindowSizeCallback(window, resize_callback);
-
-  // Load the OpenGL functions.
-  if (!gladLoadGL()) {
-    return -1;
-  }
 
   if (SPDLOG_LEVEL_DEBUG >= spdlog::get_level()) {
     GLUtils::dumpGLInfo();
@@ -113,7 +151,7 @@ void System::initScene() {
   const std::string robot_model_file = cfg->robot_model_filename();
   spdlog::info("Loading: {}", robot_model_file);
   model_mgr->setDrawableModel(
-      "robot", std::make_shared<model::Mesh>(robot_model_file, &prog_robot));
+      "robot", std::make_shared<model::Mesh>(robot_model_file, prog_robot));
 
   model_mgr->setDrawableModel("dome", std::make_shared<model::Dome>(2.0f, 50));
 
@@ -141,8 +179,8 @@ void System::initScene() {
   cv::Mat cv_model_mat;
   cfg->getRobotPose(cv_model_mat);
   model_mgr->setModelMatrix("robot", cv_model_mat);
-  prog.use();
-  prog.setUniform("CAMERA_NUM", CAMERA_NUM);
+  prog->use();
+  prog->setUniform("CAMERA_NUM", CAMERA_NUM);
 
   ////////////////////////////////////////
   // Load camera extrinsic and intrinsic
@@ -166,7 +204,7 @@ void System::initScene() {
     // transposed (column-wise and row-wise conversion)
     pose.convertTo(tmp_viewmat, CV_32F);
     cv::transpose(tmp_viewmat, tmp_viewmat);
-    FisheyeViews[cam_id] = glm::make_mat4(tmp_viewmat.ptr<float>(0, 0));
+    FisheyeViews.push_back(glm::make_mat4(tmp_viewmat.ptr<float>(0, 0)));
 
     // print camera poses
     spdlog::debug("fisheye_views[{}]", cam_id);
@@ -177,13 +215,14 @@ void System::initScene() {
 
   // Debug glsl
   if (SPDLOG_LEVEL_DEBUG >= spdlog::get_level()) {
-    prog.printActiveAttribs();
-    prog.printActiveUniformBlocks();
-    prog.printActiveUniforms();
+    prog->printActiveAttribs();
+    prog->printActiveUniformBlocks();
+    prog->printActiveUniforms();
     std::cout << std::endl;
   }
   // environment setting
-  prog_robot.use();  // Don't foget call prog.use() before call prog.set_uniform
+  prog_robot
+      ->use();  // Don't foget call prog->use() before call prog->set_uniform
   const glm::vec4 worldLight = glm::vec4(5.0f, 5.0f, -4.0f, 1.0f);
   gl_cam_mgr->setWorldLightPosition(worldLight);
 }
@@ -208,7 +247,8 @@ void System::mainLoop() {
   int index = 0;
 
   while (!glfwWindowShouldClose(window) &&
-         !glfwGetKey(window, GLFW_KEY_ESCAPE)) {
+         !glfwGetKey(window, GLFW_KEY_ESCAPE) &&
+         !checkExit()) {
     GLUtils::checkForOpenGLError(__FILE__, __LINE__);
     update(float(glfwGetTime()));
     render();
@@ -249,7 +289,7 @@ void System::render() {
   // get camera view matrix
   ViewMatrix = gl_cam_mgr->getViewMat();
 
-  prog.use();
+  prog->use();
 
   switch (render_mode) {
     case fvp::RenderMode::FLOOR:
@@ -269,7 +309,7 @@ void System::render() {
       break;
   }
 
-  prog_robot.use();
+  prog_robot->use();
   // draw robot
   ModelMatrix = model_mgr->getModelMatrix("robot");
   setMatricesPassthrough();
@@ -278,33 +318,33 @@ void System::render() {
 //-----------------------------------------------------------------------------
 void System::setMatrices() {
   const glm::mat4 mv = ViewMatrix * ModelMatrix;
-  prog.setUniform("ModelMatrix", ModelMatrix);
-  prog.setUniform("ModelViewMatrix", mv);
+  prog->setUniform("ModelMatrix", ModelMatrix);
+  prog->setUniform("ModelViewMatrix", mv);
   for (int i = 0; i < FisheyeViews.size(); i++) {
     const std::string uniform_name = fmt::format("FisheyeCameraViews[{}]", i);
-    prog.setUniform(uniform_name.c_str(), FisheyeViews[i] * ModelMatrix);
+    prog->setUniform(uniform_name.c_str(), FisheyeViews[i] * ModelMatrix);
   }
-  prog.setUniform("NormalMatrix", glm::mat3(glm::vec3(mv[0]), glm::vec3(mv[1]),
-                                            glm::vec3(mv[2])));
-  prog.setUniform("MVP", ProjMatrix * mv);
+  prog->setUniform("NormalMatrix", glm::mat3(glm::vec3(mv[0]), glm::vec3(mv[1]),
+                                             glm::vec3(mv[2])));
+  prog->setUniform("MVP", ProjMatrix * mv);
 }
 //-----------------------------------------------------------------------------
 void System::setMatricesPassthrough() {
-  prog_robot.setUniform("PointSize", 8.0f);
+  prog_robot->setUniform("PointSize", 8.0f);
   ViewMatrix = gl_cam_mgr->getViewMat();
   const glm::mat4 mv = ViewMatrix * ModelMatrix;
-  prog_robot.setUniform("ModelViewMatrix", mv);
-  prog_robot.setUniform(
+  prog_robot->setUniform("ModelViewMatrix", mv);
+  prog_robot->setUniform(
       "NormalMatrix",
       glm::mat3(glm::vec3(mv[0]), glm::vec3(mv[1]), glm::vec3(mv[2])));
-  prog_robot.setUniform("MVP", ProjMatrix * mv);
+  prog_robot->setUniform("MVP", ProjMatrix * mv);
 
   // light
   const glm::vec4 worldLight = gl_cam_mgr->getWorldLightPosition();
-  prog_robot.setUniform("Light.Position", ViewMatrix * worldLight);
-  prog_robot.setUniform("Light.Ld", glm::vec4(1.0f, 1.0f, 1.0f, 1.0f));
-  prog_robot.setUniform("Light.La", glm::vec4(1.0f, 1.0f, 1.0f, 1.0f));
-  prog_robot.setUniform("Light.Ls", glm::vec4(1.0f, 1.0f, 1.0f, 1.0f));
+  prog_robot->setUniform("Light.Position", ViewMatrix * worldLight);
+  prog_robot->setUniform("Light.Ld", glm::vec4(1.0f, 1.0f, 1.0f, 1.0f));
+  prog_robot->setUniform("Light.La", glm::vec4(1.0f, 1.0f, 1.0f, 1.0f));
+  prog_robot->setUniform("Light.Ls", glm::vec4(1.0f, 1.0f, 1.0f, 1.0f));
 }
 //-----------------------------------------------------------------------------
 void System::resizeGLWindow(int w, int h) {
@@ -333,18 +373,20 @@ void System::setRenderMode(const RenderMode mode) { render_mode = mode; }
 void System::compileAndLinkShader() {
   spdlog::info("Compile and link shader");
   try {
-    const std::string base = "../../shader/";
-    spdlog::info("Loading projtex.[vs, fs] from {}", base);
-    prog.compileShader("../../shader/projtex.vs");
-    prog.compileShader("../../shader/projtex.fs");
-    prog.link();
-    prog.use();
+    const std::string base = cfg->shader_full();
+    spdlog::info("Loading projtex.[vert, frag] from {}", base);
+    prog->compileShader(std::string(base + "/projtex.vert").c_str());
+    prog->compileShader(std::string(base + "/projtex.frag").c_str());
+    prog->link();
+    prog->use();
 
-    spdlog::info("Loading simpleAssimpShader.[vert, frag] from {}", base);
-    prog_robot.compileShader("../../shader/simpleAssimpShader.vert");
-    prog_robot.compileShader("../../shader/simpleAssimpShader.frag");
-    prog_robot.link();
-    // prog_robot.use();
+    spdlog::info("Loading simple_assimp.[vert, frag] from {}", base);
+    prog_robot->compileShader(
+        std::string(base + "/simple_assimp.vert").c_str());
+    prog_robot->compileShader(
+        std::string(base + "/simple_assimp.frag").c_str());
+    prog_robot->link();
+    // prog_robot->use();
   } catch (GLSLProgramException &e) {
     spdlog::error("GLSLProgramException: {}", e.what());
     exit(EXIT_FAILURE);
@@ -389,16 +431,16 @@ void System::setCameraCalibData(const std::string fname, const int cam_id) {
   };
   spdlog::debug("xc={}, yc={}, width={}, height={}", o.xc, o.yc, o.width,
                 o.height);
-  prog.setUniform(param_name + ".xc", o.xc);
-  prog.setUniform(param_name + ".yc", o.yc);
-  prog.setUniform(param_name + ".c", o.c);
-  prog.setUniform(param_name + ".d", o.d);
-  prog.setUniform(param_name + ".e", o.e);
-  prog.setUniform(param_name + ".width", float(o.width));
-  prog.setUniform(param_name + ".height", float(o.height));
+  prog->setUniform(param_name + ".xc", o.xc);
+  prog->setUniform(param_name + ".yc", o.yc);
+  prog->setUniform(param_name + ".c", o.c);
+  prog->setUniform(param_name + ".d", o.d);
+  prog->setUniform(param_name + ".e", o.e);
+  prog->setUniform(param_name + ".width", float(o.width));
+  prog->setUniform(param_name + ".height", float(o.height));
   // set array
-  prog.setUniform(param_name + ".invpol", o.invpol, INVPOL_MAX);
-  prog.setUniform(param_name + ".pol", o.pol, POL_MAX);
+  prog->setUniform(param_name + ".invpol", o.invpol, INVPOL_MAX);
+  prog->setUniform(param_name + ".pol", o.pol, POL_MAX);
 }
 
 // GLFW callback

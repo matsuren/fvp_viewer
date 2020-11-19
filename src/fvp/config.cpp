@@ -13,8 +13,8 @@
 namespace fvp {
 
 ConfigData::ConfigData()
-    : calib_folder("../../data"),
-      record_folder("../../raw_data"),
+    : calib_folder("data"),
+      shader_folder("shader"),
       image_sources({"15637060", "15637085", "16025862", "16025863"}),
       capture_framerate(20),
       LRF_com_port("COM4"),
@@ -28,7 +28,7 @@ ConfigData::ConfigData()
 
 template <class Archive>
 void ConfigData::serialize(Archive &archive) {
-  archive(CEREAL_NVP(calib_folder), CEREAL_NVP(record_folder),
+  archive(CEREAL_NVP(calib_folder), CEREAL_NVP(shader_folder),
           CEREAL_NVP(image_sources), CEREAL_NVP(ocamcalib_files),
           CEREAL_NVP(sample_image_files), CEREAL_NVP(camera_pose_yml),
           CEREAL_NVP(robot_model_file), CEREAL_NVP(robot_align_yml),
@@ -40,49 +40,69 @@ Config::Config(std::string cfg_fname) {
   // Load config file
   // If there is no config file, it will generate default config file
   spdlog::info("Load config file: {}", cfg_fname);
-  std::ifstream ifs(cfg_fname);
-  if (!ifs) {
-    spdlog::error("Cannot read config file : {}", cfg_fname);
-    spdlog::info("Generating default config file in {}", cfg_fname);
-    std::ofstream os(cfg_fname);
-    {
-      cereal::JSONOutputArchive o_archive(os);
-      o_archive(cereal::make_nvp("FVP_settings", data));
-    }
-    throw std::runtime_error("No config file");
+  const size_t found = cfg_fname.find_last_of("/\\");
+  std::string fname;
+  if (found != std::string::npos) {
+    base_folder = cfg_fname.substr(0, found);
+    fname = cfg_fname.substr(found + 1);
+  } else {
+    base_folder = ".";
+    fname = cfg_fname;
   }
-  cereal::JSONInputArchive i_archive(ifs);
-  i_archive(data);
-}
+  spdlog::info("Base folder of config file: {}", base_folder);
 
+  std::ifstream ifs(cfg_fname);
+  try {
+    cereal::JSONInputArchive i_archive(ifs);
+    i_archive(data);
+  } catch (cereal::Exception &e) {
+    if (!ifs) {
+      spdlog::error("Cannot read config file : {}", fname);
+    } else {
+      spdlog::error("cereal::Exception : {}", e.what());
+    }
+    const std::string default_fname = fname + "_default";
+    std::ofstream os(default_fname);
+    spdlog::info("Generating default config file : ./{}", default_fname);
+    cereal::JSONOutputArchive o_archive(os);
+    o_archive(cereal::make_nvp("FVP_settings", data));
+    throw std::runtime_error("No config or wrong config file");
+  }
+}
+const std::string Config::calib_full() {
+  return fmt::format("{}/{}", base_folder, data.calib_folder);
+}
+const std::string Config::shader_full() {
+  return fmt::format("{}/{}", base_folder, data.shader_folder);
+}
 const std::string Config::cam_pose_filename() {
-  return data.calib_folder + "/" + data.camera_pose_yml;
+  return fmt::format("{}/{}", calib_full(), data.camera_pose_yml);
 }
 const std::string Config::image_filenames(int i) {
   // copy
   std::string s = data.sample_image_files;
   // replace
   s.replace(s.find("*"), 1, std::to_string(i));
-  return data.calib_folder + "/" + s;
+  return fmt::format("{}/{}", calib_full(), s);
 }
 const std::string Config::calib_filenames(int i) {
   // copy
   std::string s = data.ocamcalib_files;
   // replace
   s.replace(s.find("*"), 1, std::to_string(i));
-  return data.calib_folder + "/" + s;
+  return fmt::format("{}/{}", calib_full(), s);
 }
 const std::string Config::robot_model_filename() {
-  return data.calib_folder + "/" + data.robot_model_file;
+  return fmt::format("{}/{}", calib_full(), data.robot_model_file);
 }
 
 const std::string Config::lrf_data_filename() {
-  return data.calib_folder + "/" + data.sample_lrf_file;
+  return fmt::format("{}/{}", calib_full(), data.sample_lrf_file);
 }
 
 const std::string Config::LRF_com_port() { return data.LRF_com_port; }
 
-const std::string Config::record_folder() { return data.record_folder; }
+const std::string Config::shader_folder() { return data.shader_folder; }
 const int Config::num_camera() { return int(data.image_sources.size()); }
 const std::vector<std::string> Config::image_sources() {
   return data.image_sources;
@@ -90,11 +110,12 @@ const std::vector<std::string> Config::image_sources() {
 const int Config::capture_framerate() { return data.capture_framerate; }
 
 void Config::getRobotPose(cv::Mat &trans_matrix) {
-  const auto fs = cv::FileStorage(
-      data.calib_folder + "/" + data.robot_align_yml, cv::FileStorage::READ);
+  const auto fs =
+      cv::FileStorage(fmt::format("{}/{}", calib_full(), data.robot_align_yml),
+                      cv::FileStorage::READ);
   if (!fs.isOpened()) {
     spdlog::error("Cannot open file: {} in {}.", data.robot_align_yml,
-                  data.calib_folder);
+                  calib_full());
     throw std::runtime_error("No robot pose file");
   }
   cv::Mat R, rvec, tvec;
@@ -110,11 +131,13 @@ void Config::getRobotPose(cv::Mat &trans_matrix) {
 }
 
 void Config::getLRFPose(double &trans_x, double &trans_y, double &rot_rad) {
-  const auto fs = cv::FileStorage(data.calib_folder + "/" + data.lrf_align_yml,
-                                  cv::FileStorage::READ);
+  const auto fs =
+      cv::FileStorage(fmt::format("{}/{}", calib_full(), data.lrf_align_yml),
+                      cv::FileStorage::READ);
+
   if (!fs.isOpened()) {
     spdlog::error("Cannot open file: {} in {}.", data.lrf_align_yml,
-                  data.calib_folder);
+                  calib_full());
     throw std::runtime_error("No LRF pose file");
   }
   cv::Mat tvec;

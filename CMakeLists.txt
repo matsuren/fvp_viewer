@@ -23,6 +23,11 @@ if(MSVC)
   endforeach(OUTPUTCONFIG CMAKE_CONFIGURATION_TYPES)
 endif()
 
+option(
+  WITH_SENSORS
+  "ON: if you want to use sensors. OFF: if you want to use only sample images."
+  ON)
+
 # ##############################################################################
 add_subdirectory(thirdparty)
 add_subdirectory(src)

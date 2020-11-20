@@ -3,7 +3,9 @@
 #include "fvp/config.hpp"
 #include "fvp/fvp_system.hpp"
 #include "sensors/sensor_manager.hpp"
-
+#include <opencv2/highgui.hpp>
+#include <thread>
+using GLuint = unsigned int;
 int main(int argc, char *argv[]) {
 
   // Set logger

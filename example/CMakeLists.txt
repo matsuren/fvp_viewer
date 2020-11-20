@@ -24,7 +24,10 @@ target_include_directories(simple_example PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
 # directory structure
 source_group(TREE "${CMAKE_CURRENT_SOURCE_DIR}/" FILES ${EXAMPLE_SOURCES})
 
-set(WITH_SENSORS OFF)
+
+################################################################################
+## with sensors
+################################################################################
 if(WITH_SENSORS)
   # ############################################################################
   # Spinnaker SDK
@@ -58,44 +61,10 @@ if(WITH_SENSORS)
   endif(rplidar)
 
   # ############################################################################
-  # URG
-  add_library(urg_lib OBJECT)
-  target_sources(
-    urg_lib
-    PRIVATE "urg/Connection_information.cpp"
-            "urg/ticks.cpp"
-            "urg/Urg_driver.cpp"
-            "urg/urg_connection.c"
-            "urg/urg_debug.c"
-            "urg/urg_ring_buffer.c"
-            "urg/urg_sensor.c"
-            "urg/urg_serial.c"
-            "urg/urg_serial_utils_windows.c"
-            "urg/urg_tcpclient.c"
-            "urg/urg_utils.c"
-    PUBLIC "urg/Connection_information.hpp" "urg/Urg_driver.h"
-    PRIVATE "urg/Lidar.h"
-            "urg/detect_os.h"
-            "urg/math_utilities.h"
-            "urg/ticks.h"
-            "urg/urg_connection.h"
-            "urg/urg_debug.h"
-            "urg/urg_detect_os.h"
-            "urg/urg_errno.h"
-            "urg/urg_ring_buffer.h"
-            "urg/urg_sensor.h"
-            "urg/urg_serial.h"
-            "urg/urg_serial_utils.h"
-            "urg/urg_tcpclient.h"
-            "urg/urg_utils.h")
-  target_link_libraries(urg_lib PRIVATE setupapi.lib ws2_32.lib comctl32.lib)
-  set_property(TARGET urg_lib PROPERTY FOLDER "urg")
-
-  # ############################################################################
   # Example with sensor
   add_executable(sensor_example)
   set(SENSOR_SOURCES
-      PRIVATE "sensor_example.cpp" "sensors/file_lrf.cpp"
+      PRIVATE "sensor_example.cpp" "sensors/sensor_manager.cpp" "sensors/file_lrf.cpp"
       "sensors/rplidar_lrf.cpp" "sensors/spincamera.cpp" "sensors/urg_lrf.cpp")
   set(SENSOR_HEADERS
       PRIVATE
@@ -111,7 +80,7 @@ if(WITH_SENSORS)
     sensor_example
     PUBLIC fvp_core
     PUBLIC spdlog::spdlog ${OpenCV_LIBS} ${rplidar_LIBS} ${Spinnaker_LIBS}
-           urg_lib Thirdparty::HeaderOnly)
+          Thirdparty::HeaderOnly urg_lib)
   target_include_directories(
     sensor_example PUBLIC ${CMAKE_CURRENT_SOURCE_DIR} ${Spinnaker_INCLUDE_DIR}
                           ${rplidar_INCLUDE_DIR})

@@ -23,10 +23,10 @@ if(MSVC)
   endforeach(OUTPUTCONFIG CMAKE_CONFIGURATION_TYPES)
 endif()
 
-option(
-  WITH_SENSORS
-  "ON: if you want to use sensors. OFF: if you want to use only sample images."
-  ON)
+option(WITH_SENSORS "ON: Use sensors. OFF: Use only sample images." ON)
+if(WITH_SENSORS)
+  option(WITH_LRF "ON: Use LRF in indoor environment" ON)
+endif()
 
 # ##############################################################################
 add_subdirectory(thirdparty)

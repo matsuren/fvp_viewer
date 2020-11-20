@@ -1,8 +1,9 @@
 #pragma once
-#include <memory>
 #include <iostream>
+#include <memory>
 #include <mutex>
 #include <opencv2/core.hpp>
+#include <thread>
 #include "sensors/base_lrf.hpp"
 #include "sensors/spincamera.hpp"
 #include "sensors/spinmanager.hpp"
@@ -38,9 +39,6 @@ class SensorManager {
   std::vector<std::mutex *> img_mtxs;
   std::shared_ptr<sensor::BaseLRF> LRF_sensor;
 
-  // with viewer
-  bool with_viewer = false;
-
   // -----------------------------------
   int initialize();
 
@@ -55,6 +53,4 @@ class SensorManager {
   void viewerWorker();
   //-----------------------------------------------------------------------------
   void LRFWorker(bool enableFPS);
-
-
 };

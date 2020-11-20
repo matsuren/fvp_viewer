@@ -2,13 +2,12 @@
 
 #include <spdlog/spdlog.h>
 
-#include <fstream>
 #include <iostream>
 #include <mutex>
-#include <opencv2/calib3d.hpp>
 #include <opencv2/highgui/highgui.hpp>
 #include <opencv2/imgcodecs.hpp>
 #include <opencv2/imgproc.hpp>
+#include <thread>
 
 #include "FpsDisplayer.hpp"
 #include "fvp/config.hpp"
@@ -193,7 +192,6 @@ void SensorManager::captureWorker(int cam_id, bool enableFPS) {
 }
 //-----------------------------------------------------------------------------
 void SensorManager::viewerWorker() {
-  with_viewer = true;
   std::this_thread::sleep_for(std::chrono::milliseconds(500));
   // get fps
   FpsDisplayer fps_displayer("viewer", 250);

@@ -4,3 +4,6 @@
 [submodule "thirdparty/cereal"]
 	path = thirdparty/cereal
 	url = https://github.com/USCiLab/cereal.git
+[submodule "thirdparty/urg_library"]
+	path = thirdparty/urg_library
+	url = https://github.com/UrgNetwork/urg_library.git

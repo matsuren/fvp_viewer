@@ -38,11 +38,12 @@ cmake --build . --config Debug --target INSTALL
 cmake --build . --config Release --target INSTALL
 
 
-set INSTALL_LOCAL_DIR="C:/dev/local"
-mkdir %INSTALL_LOCAL_DIR%
+::set INSTALL_LOCAL_DIR="C:/dev/local"
+::mkdir %INSTALL_LOCAL_DIR%
 cd %CURRENT_DIR%
 mkdir build
 cd build
-cmake -A x64 -G %GENERATOR_NAME% -DGLFW3_DIR=%DEV_DIR%/glfw/build/install/lib/cmake/glfw3 -DAssimp_DIR=%DEV_DIR%/assimp/build/install/lib/cmake/assimp-5.0 -DCMAKE_INSTALL_PREFIX=%INSTALL_LOCAL_DIR% ..
+::cmake -A x64 -G %GENERATOR_NAME% -DGLFW3_DIR=%DEV_DIR%/glfw/build/install/lib/cmake/glfw3 -DAssimp_DIR=%DEV_DIR%/assimp/build/install/lib/cmake/assimp-5.0 -DCMAKE_INSTALL_PREFIX=%INSTALL_LOCAL_DIR% ..
+cmake -A x64 -G %GENERATOR_NAME% -DGLFW3_DIR=%DEV_DIR%/glfw/build/install/lib/cmake/glfw3 -DAssimp_DIR=%DEV_DIR%/assimp/build/install/lib/cmake/assimp-5.0 ..
 cmake --build . --config Release
 pause

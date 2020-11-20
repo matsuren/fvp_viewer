@@ -5,8 +5,8 @@
 
 #include <iostream>
 
-#include "urg/Connection_information.hpp"
-#include "urg/Urg_driver.h"
+#include "Connection_information.h"
+#include "Urg_driver.h"
 
 using namespace qrk;
 

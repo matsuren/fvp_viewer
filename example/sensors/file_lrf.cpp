@@ -2,13 +2,14 @@
 #include "sensors/file_lrf.hpp"
 
 #include <spdlog/spdlog.h>
-#include <fstream>
 #include <iostream>
+#include <thread>
 
 namespace sensor {
 
 //-----------------------------------------------------------------------------
-FileLRF::FileLRF(const std::string base_filename) : base_fname(base_filename), cnt(0) {
+FileLRF::FileLRF(const std::string base_filename)
+    : base_fname(base_filename), cnt(0) {
   isOpened = true;
 }
 //-----------------------------------------------------------------------------

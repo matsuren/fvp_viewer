@@ -4,3 +4,6 @@ build_x64
 cmake-*/
 devel
 ros/src/CMakeLists.txt
+log
+install
+*_default

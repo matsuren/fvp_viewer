@@ -60,19 +60,6 @@ rosrun fvp_viewer fvp_node
 ```
 After running fvp_node, please publish LaserScan (`/scan`) and images (`/camera{i}/image_raw`).
 
-### ROS2 wrapper (Tested in Foxy)
-```bash
-git clone --recurse-submodules https://github.com/matsuren/fvp_viewer.git
-cd fvp_viewer
-sh build_script_ubuntu.sh
-sudo make install
-cd ../ros2
-colcon build
-source install/local_setup.bash
-ros2 run fvp_viewer fvp_node --ros-args -p config:=../config_FVP_parameters.json 
-```
-After running fvp_node, please publish LaserScan (`/scan`) and images (`/camera{i}/image_raw`).
-
 ## Calibration
 
 - Attach four fisheye cameras and a LRF on a robot.

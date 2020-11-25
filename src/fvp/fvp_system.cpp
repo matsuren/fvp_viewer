@@ -117,7 +117,7 @@ int System::initGLFW() {
   // set window size
   glfwSetWindowSizeCallback(window, resize_callback);
 
-  if (SPDLOG_LEVEL_DEBUG >= spdlog::default_logger()->level()) {
+  if (SPDLOG_LEVEL_DEBUG >= spdlog::get_level()) {
     GLUtils::dumpGLInfo();
   }
 
@@ -214,7 +214,7 @@ void System::initScene() {
   }
 
   // Debug glsl
-  if (SPDLOG_LEVEL_DEBUG >= spdlog::default_logger()->level()) {
+  if (SPDLOG_LEVEL_DEBUG >= spdlog::get_level()) {
     prog->printActiveAttribs();
     prog->printActiveUniformBlocks();
     prog->printActiveUniforms();

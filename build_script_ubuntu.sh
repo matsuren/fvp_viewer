@@ -21,13 +21,16 @@ make -j8
 sudo make install
 
 
-cd $DEV_DIR
-git clone https://github.com/gabime/spdlog.git -b v1.8.1 --depth 1
-cd spdlog
-mkdir build && cd build
-cmake -DSPDLOG_BUILD_SHARED=ON ..
-make -j8
-sudo make install
+#cd $DEV_DIR
+#git clone https://github.com/gabime/spdlog.git -b v1.8.1 --depth 1
+#cd spdlog
+#mkdir build && cd build
+#cmake -DSPDLOG_BUILD_SHARED=ON ..
+#make -j8
+#sudo make install
+
+# ROS2 uses libspdlog-dev
+sudo apt-get install libspdlog-dev
 
 cd $SCRIPT_DIR
 mkdir build && cd build

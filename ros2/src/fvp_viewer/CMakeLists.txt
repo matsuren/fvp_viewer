@@ -32,16 +32,16 @@ target_include_directories(fvp_node PUBLIC
   $<INSTALL_INTERFACE:include>)
 target_link_libraries(fvp_node fvp_core ${OpenCV_LIBS})
 ament_target_dependencies(fvp_node rclcpp std_msgs sensor_msgs cv_bridge image_transport)
-
-add_executable(image_publisher src/image_publisher.cpp)
-target_include_directories(image_publisher PUBLIC
-        $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
-        $<INSTALL_INTERFACE:include>)
-target_link_libraries(image_publisher ${OpenCV_LIBS})
-ament_target_dependencies(image_publisher rclcpp std_msgs sensor_msgs cv_bridge image_transport)
-
-install(TARGETS fvp_node image_publisher
+install(TARGETS fvp_node
         DESTINATION lib/${PROJECT_NAME})
+
+# add_executable(image_publisher src/image_publisher.cpp)
+# target_include_directories(image_publisher PUBLIC
+#         $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
+#         $<INSTALL_INTERFACE:include>)
+# target_link_libraries(image_publisher ${OpenCV_LIBS})
+# ament_target_dependencies(image_publisher rclcpp std_msgs sensor_msgs cv_bridge image_transport)
+
 
 if(BUILD_TESTING)
   find_package(ament_lint_auto REQUIRED)
